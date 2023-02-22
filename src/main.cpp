@@ -1,9 +1,10 @@
 #include "../include/simulation.hpp"
-#include <iostream>
 
 int main() {
     Simulation *simulation = new Simulation();
-    double result = simulation->run();
-    std::cout << result << std::endl;
+    simulation->initialize();
+    for (int i=0; i<10; i++) {
+        simulation->run();
+    }
     return 1;
 }

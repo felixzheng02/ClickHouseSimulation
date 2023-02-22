@@ -13,6 +13,8 @@ file(GLOB SOURCES "src/*.cpp")
 add_executable(ClickHouseSimulation ${SOURCES})
 target_link_libraries(ClickHouseSimulation PUBLIC simulation_lib)
 
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # target_include_directories(ClickHouseSimulation PUBLIC
 #                           "${PROJECT_BINARY_DIR}"
 #                           "${PROJECT_SOURCE_DIR}/simulation_lib"

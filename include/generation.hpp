@@ -85,22 +85,24 @@ template <class T>
 class Generator {
     public:
 	Generator() {}
-    virtual T next() = 0;
+    // virtual T next() {};
+    // virtual T *nextP() {};
 };
 
 class PhaseGenerator : public Generator<Phase> {
     Distribution<double> *dist;
     public:
-    PhaseGenerator();
-    Phase next() override;
+    PhaseGenerator(Distribution<double> *distribution);
+    Phase next(int multiprogramming);
 };
 
 class QueryGenerator : public Generator<Query> {
-    Distribution<double> *arrival_dist, *size_dist;
-    Generator<Phase> *phaseGenerator;
+    Distribution<double> *arrival_dist;
+    PhaseGenerator *phaseGenerator;
     public:
-	QueryGenerator(double lambda, double pareto_alpha);
-    Query next(); 
+	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist);
+    Query *nextP(); 
+    Distribution<double> *getArrivalDist();
 };
 
 //class MemoryBoundGenerator : public Generator {

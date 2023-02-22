@@ -1,30 +1,39 @@
 #include "generation.hpp"
 
 
-PhaseGenerator::PhaseGenerator() {
-    dist = new UniformDistribution {0.0, 1.0};
+PhaseGenerator::PhaseGenerator(Distribution<double> *distribution) {
+    dist = distribution;
 }
 
-Phase PhaseGenerator::next() {
-    double tmp = dist->sample();
-    return {1, dist->sample()};
+Phase PhaseGenerator::next(int multiprogramming) {
+    return {multiprogramming, dist->sample()};
 }
 
-QueryGenerator::QueryGenerator(double lambda, double pareto_alpha) {
-	arrival_dist = new ExponentialDistribution(lambda);
-	size_dist = new ParetoDistribution(pareto_alpha);
-    phaseGenerator = new PhaseGenerator();
+QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distribution<double> *phase_size_distribution) {
+	arrival_dist = arrival_distribution; 
+    phaseGenerator = new PhaseGenerator(phase_size_distribution);
 }
 
-Query QueryGenerator::next() {
-    std::vector<Phase> phases;
+Query *QueryGenerator::nextP() {
+    Query *query = new Query();
     double size = 0;
-    for (int i=0; i<3; i++) {
-        Phase tmp = phaseGenerator->next();
-        phases.push_back(phaseGenerator->next());
-        size += phases.back().size;
+    query->phases.push_back(phaseGenerator->next(4));
+    query->phases.push_back(phaseGenerator->next(1));
+    query->phases.push_back(phaseGenerator->next(1));
+    query->phases.push_back(phaseGenerator->next(1));
+    query->phases.push_back(phaseGenerator->next(2));
+    for (int i=0; i<query->phases.size(); i++) {
+        size += query->phases[i].size;
     }
-    return {phases, arrival_dist->sample(), size, 0};
+    query->arrival = arrival_dist->sample();
+    query->memory = 0;
+    query->size = size;
+    return query;
+}
+
+
+Distribution<double> *QueryGenerator::getArrivalDist() {
+    return arrival_dist;
 }
 
 //void MemoryBoundGenerator::generate_memory(unsigned int classes, double L, double R, double memory_alpha) {
