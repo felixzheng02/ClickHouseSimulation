@@ -1,4 +1,5 @@
 #include "../include/simulation.hpp"
+#include <iostream>
 
 int main() {
     Simulation *simulation = new Simulation();

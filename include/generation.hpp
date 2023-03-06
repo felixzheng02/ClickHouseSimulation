@@ -102,6 +102,7 @@ class QueryGenerator : public Generator<Query> {
     public:
 	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist);
     Query *nextP(); 
+    Query *nextP(double arrival_time);  
     Distribution<double> *getArrivalDist();
 };
 

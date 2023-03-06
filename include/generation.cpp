@@ -15,6 +15,10 @@ QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distr
 }
 
 Query *QueryGenerator::nextP() {
+    return QueryGenerator::nextP(arrival_dist->sample());
+}
+
+Query *QueryGenerator::nextP(double arrival_time) {
     Query *query = new Query();
     double size = 0;
     query->phases.push_back(phaseGenerator->next(4));
@@ -25,11 +29,12 @@ Query *QueryGenerator::nextP() {
     for (int i=0; i<query->phases.size(); i++) {
         size += query->phases[i].size;
     }
-    query->arrival = arrival_dist->sample();
+    query->arrival = arrival_time;
     query->memory = 0;
     query->size = size;
     return query;
 }
+
 
 
 Distribution<double> *QueryGenerator::getArrivalDist() {
