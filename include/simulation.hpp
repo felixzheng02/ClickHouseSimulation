@@ -1,4 +1,5 @@
 #include <cmath>
+#include <vector>
 #include "generation.hpp"
 
 
@@ -17,7 +18,7 @@ class Simulation {
     public:
 
         // class constructor 
-        Simulation(); 
+        Simulation(int cores, QueryGenerator *query_generator); 
 
         double getTime();
 
@@ -42,14 +43,13 @@ class Simulation {
         // initialize the simulation: set time_a
         void initialize();
 
-         // run the simulation
+         // run the simulation till next time point
          // return 0 if an arrival occurs
          // return 1 if a departure occurs
         int run(); 
         
-        // allocate the query to the processor or the queue
-        // update n_inelastic_jobs/n_elastic_jobs/n_queue_jobs
-        // update time_c
+        // attempt to allocate the query to the processor
+        // if cannot do that, allocate to the queue
         int allocate(Query *query);
 
         // check if a query can be allocated in processor
@@ -58,9 +58,8 @@ class Simulation {
         int check(Query *query);
 
         // insert Query * into processor
+        // update used_cores
         // update time_c
-        // return 1 if insertion is successful
-        // return 0 if processor is full
         int procAllocate(Query *query, int n_cores);
 
         // update each query's current phase's size
@@ -68,22 +67,14 @@ class Simulation {
         // update time_c
         void procUpdate(double time);
 
-        // remove all queries that finish processing
-        // update n_inelastic_jobs/n_elstic_jobs
-        // update time_c
-        void procRemove();
-
         // insert Query * into queue
-        // update time_c (next completion time)
-        // return 1 if insertion is successful
-        // return 0 if not  
         int queueAllocate(Query *query);
+       
+        // allocate queries in the queue to the processor
+        // based on scheduling policy (currently FCFS)
+        // until processor's cores are all occupied
+        int queueGet();
         
-        // get a query from queue
-        // temporarily just FCFS (just get the first one)
-        // remove the chosen query
-        Query *queueGet();
-        
-        // produce necessary output data
+        // produce information
         void output();
 };

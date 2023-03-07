@@ -26,9 +26,9 @@ struct Query {
         phases.front().size -= time;
         size -= time;
         if (phases.front().size < 0) {
-            std::cout << time << "; " << n_cores << "; " << phases.front().size << std::endl; 
+            std::cout << "!!!!!!!!!!!!!!!!!" << std::endl;
         }
-        if (phases.front().size == 0) {
+        if (std::abs(phases.front().size) <= 1e-7f) {
             finishPhase();
             return 1;
         } 
@@ -41,5 +41,13 @@ struct Query {
             return 1;
         }
         return 0;
+    }
+
+    void printQuery() {
+        std::cout << "n_cores: " << n_cores << ", phases: ";
+        for (Phase phase : phases) {
+            std::cout << "{" << phase.multiprogramming << ", " << phase.size << "}, ";
+        }
+        std::cout << std::endl;
     }
 };
