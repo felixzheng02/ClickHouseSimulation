@@ -37,11 +37,6 @@ std::vector<Query *> Simulation::getProcessor() {
 }
 
 
-//std::vector<Query *> Simulation::getProcessorElastic() {
-//    return processor_elastic;
-//}
-
-
 void Simulation::initialize() {
     time_a = query_generator->getArrivalDist()->sample();
 }
@@ -52,7 +47,6 @@ int Simulation::run() {
     for (Query *query : processor) {
         query->printQuery();
     }
-
     std::cout << "queue:" << std::endl;
     for (Query *query : queue) {
         query->printQuery();
@@ -65,13 +59,12 @@ int Simulation::run() {
         std::cout << std::endl << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
-           
+
         Query *query = query_generator->nextP(time_a);
 
         allocate(query); // allocate to processor/queue
                          
-        // generate new time_a
-        time_a = query_generator->getArrivalDist()->sample();
+        time_a = query_generator->getArrivalDist()->sample(); // generate new time_a
 
         time += time_n;
 
@@ -85,12 +78,10 @@ int Simulation::run() {
         
         time_a -= time_n;
 
-        Simulation::procUpdate(time_n); // update time_c
+        Simulation::procUpdate(time_n); // time_c update here
         
-        // when to schedule a query, how?
         if (queue.size() > 0) {
             queueGet();
-//            Simulation::allocate(Simulation::queueGet());
         }
         
         time += time_n;
@@ -108,7 +99,7 @@ int Simulation::allocate(Query *query) {
     if (n_cores != 0) {
         procAllocate(query, n_cores);
         return 1;
-    } else { // if n_inelastic_jobs == cores, allocate on queue
+    } else {
         queueAllocate(query);
         return 0;
     }
@@ -171,8 +162,6 @@ void Simulation::procUpdate(double time) {
             }
         }
     }
-    
-
 }    
 
 

@@ -1,8 +1,6 @@
-n-inelastic-proc, n-elastic-proc, (cores occupied by IP = n-inelastic-proc, other available cores = multiprogramming - n-inelastic-proc);
-
 Simulation::run() {
     if (arrival) {
-        update queries' remaining sizes in processor by time-a;
+        update queries' remaining sizes in processor
         update time-c;
         generate a new query;
         n-jobs++;

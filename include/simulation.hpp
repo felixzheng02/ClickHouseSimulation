@@ -5,42 +5,34 @@
 
 class Simulation {
     private:
-        int cores = 8;
-        int used_cores = 0;
-        double time = 0.0;
+
+        int cores = 8; // total cores available
+        int used_cores = 0; // number of cores occupied
+        double time = 0.0; // global time
         double time_a; // time until next arrival
-        double time_c = INFINITY;
+        double time_c = INFINITY; // time until next phase completion
         QueryGenerator *query_generator;
         std::vector<Query *> queue;
-        std::vector<int> index_next_complete; // vector of indexs of processor that tracks the query that will firstly complete processing
         std::vector<Query *> processor;
-        //std::vector<Query *> processor_elastic;
+
     public:
 
-        // class constructor 
         Simulation(int cores, QueryGenerator *query_generator); 
 
         double getTime();
 
-        double getTimeC();
-
         double getTimeA();
 
+        double getTimeC();
+
         int getNJobs();
-
-        int getNInelasticJobs();
-
-        int getNElasticJobs();
-
-        int getNCoresElastic();
 
         std::vector<Query *> getQueue();
 
         std::vector<Query *> getProcessor();
         
-        //std::vector<Query *> getProcessorElastic();
-
-        // initialize the simulation: set time_a
+        // initialize the simulation
+        // set time_a
         void initialize();
 
          // run the simulation till next time point

@@ -85,8 +85,6 @@ template <class T>
 class Generator {
     public:
 	Generator() {}
-    // virtual T next() {};
-    // virtual T *nextP() {};
 };
 
 class PhaseGenerator : public Generator<Phase> {
