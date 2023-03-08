@@ -37,26 +37,27 @@ std::vector<Query *> Simulation::getProcessor() {
 }
 
 
+double Simulation::getJobsTime() {
+    return jobs_time;
+}
+
+
+double Simulation::getMeanJobs() {
+    return jobs_time/time;
+}
+
+
 void Simulation::initialize() {
     time_a = query_generator->getArrivalDist()->sample();
 }
 
 int Simulation::run() {
 
-    std::cout << "processor:" << std::endl;
-    for (Query *query : processor) {
-        query->printQuery();
-    }
-    std::cout << "queue:" << std::endl;
-    for (Query *query : queue) {
-        query->printQuery();
-    }
-
     double time_n = std::min(time_a, time_c); // find time_next
                                                   
     if (time_n == time_a) { // if time_next is time_arrival
         
-        std::cout << std::endl << "arrival occurs; ";
+//        std::cout << std::endl << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
 
@@ -68,13 +69,9 @@ int Simulation::run() {
 
         time += time_n;
 
-        Simulation::output();
-
-        return 0;
-        
     } else { // if time_n == time_c
         
-        std::cout << std::endl << "phase finishes; ";
+//        std::cout << std::endl << "phase finishes; ";
         
         time_a -= time_n;
 
@@ -86,10 +83,13 @@ int Simulation::run() {
         
         time += time_n;
 
-        Simulation::output();
-        
-        return 1;
     }
+
+    jobs_time += getNJobs() * time_n;
+
+    Simulation::output();
+
+    return 1;
 
 }
 
@@ -142,7 +142,7 @@ void Simulation::procUpdate(double time) {
             if (query->phases.size() == 0) {
                 processor.erase(processor.begin()+i);
                 i--;
-                break;
+                continue;
             }
             int n_cores = check(query);
             if (n_cores == 0) {
@@ -189,5 +189,17 @@ int Simulation::queueGet() {
             
 
 void Simulation::output() {
+    /*
     std::cout << "time: " << time << ", time_a: " << time_a << ", time_c: " << time_c << ", used_cores: " << used_cores << ", queue_size: " << queue.size() << std::endl;
+
+    std::cout << "processor:" << std::endl;
+    for (Query *query : processor) {
+        query->printQuery();
+    }
+    std::cout << "queue:" << std::endl;
+    for (Query *query : queue) {
+        query->printQuery();
+    }
+    */
+    std::cout << getNJobs() << " " << jobs_time << std::endl;
 }

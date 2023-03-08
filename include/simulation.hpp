@@ -14,6 +14,7 @@ class Simulation {
         QueryGenerator *query_generator;
         std::vector<Query *> queue;
         std::vector<Query *> processor;
+        double jobs_time = 0; // keep track of average number of jobs in the system * global time
 
     public:
 
@@ -30,14 +31,16 @@ class Simulation {
         std::vector<Query *> getQueue();
 
         std::vector<Query *> getProcessor();
+
+        double getJobsTime();
+
+        double getMeanJobs();
         
         // initialize the simulation
         // set time_a
         void initialize();
 
          // run the simulation till next time point
-         // return 0 if an arrival occurs
-         // return 1 if a departure occurs
         int run(); 
         
         // attempt to allocate the query to the processor
