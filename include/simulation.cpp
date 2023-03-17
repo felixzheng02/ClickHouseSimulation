@@ -8,6 +8,7 @@ Simulation::Simulation(int cores, Policy policy,  QueryGenerator *query_generato
     this->query_generator = query_generator;
 };
 
+
 double Simulation::getTime() {
     return time;
 }
@@ -113,17 +114,17 @@ int Simulation::allocate(Query *query) {
 
 int Simulation::check(Query *query) {
     if (query->phases.size() == 0) return 0;
-    if (query->getNextPhase().multiprogramming == 1) {
-        if (used_cores < cores) {
-            return 1;
-        }
-        return 0;
-    } else {
+    
+    if (policy == SRPT) {
+
+    }
+
+    else {
         if (used_cores < cores) {
             return std::min(cores-used_cores, query->getNextPhase().multiprogramming);
         }
-        return 0;
     }
+    return 0;
 }
 
 

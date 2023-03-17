@@ -7,10 +7,12 @@ int ExpExp(int n_cores, double arrival_lambda, double phase_size_lambda, int n_i
 
 std::string getText(Policy policy) {
     switch (policy) {
-       case FCFS:
-           return "FCFS";
-       case SJF:
-           return "SJF";
+        case FCFS:
+            return "FCFS";
+        case SJF:
+            return "SJF";
+        case SRPT:
+           return "SRPT";
     }
 }
 
@@ -18,33 +20,35 @@ std::string getText(Policy policy) {
 int main() {
 
     int n_cores = 8;
-    Policy policy = FCFS;
+    std::vector<Policy> policies = {FCFS, SJF};
     double arrival_lambda = 1;
     
-    std::ofstream data;
-    data.open ("../data/exp_exp_" + getText(policy) + ".csv");
-    data << "phase_size, mean_jobs, \n";
+    for (Policy policy : policies) {
+        std::ofstream data;
+        data.open ("../data/exp_exp_" + getText(policy) + ".csv");
+        data << "phase_size, mean_jobs, \n";
 
-    for (double size=0.1; size<3.5; size+=0.1) {
+        for (double size=0.1; size<3.5; size+=0.1) {
 
-        Distribution<double> *arrival_dist = new ExponentialDistribution(arrival_lambda);
-        Distribution<double> *phase_size_dist = new ExponentialDistribution(1/size);
-        QueryGenerator *query_generator = new QueryGenerator(arrival_dist, phase_size_dist);
+            Distribution<double> *arrival_dist = new ExponentialDistribution(arrival_lambda);
+            Distribution<double> *phase_size_dist = new ExponentialDistribution(1/size);
+            QueryGenerator *query_generator = new QueryGenerator(arrival_dist, phase_size_dist);
 
-        Simulation *simulation = new Simulation(n_cores, policy, query_generator);
-        simulation->initialize();
+            Simulation *simulation = new Simulation(n_cores, policy, query_generator);
+            simulation->initialize();
 
-        for (int i=0; i<2000; i++) {
-            simulation->run();
+            for (int i=0; i<2000; i++) {
+                simulation->run();
+            }
+
+            data << size << ", " << simulation->getMeanJobs() << ", \n";
+
+            delete simulation;
+            // ExpExp(n_cores, arrival_lambda, phase_size_lambda - i, 100);
         }
 
-        data << size << ", " << simulation->getMeanJobs() << ", \n";
-
-        delete simulation;
-        // ExpExp(n_cores, arrival_lambda, phase_size_lambda - i, 100);
+        data.close();
     }
-
-    data.close();
 
     return 1;
 }
