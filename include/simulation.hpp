@@ -1,6 +1,17 @@
 #include <cmath>
 #include <vector>
+#include <list>
 #include "generation.hpp"
+
+
+enum Policy {
+    FCFS = 0,
+    SJF = 1,
+    SRPT = 2
+};
+
+
+std::string getText(Policy policy);
 
 
 class Simulation {
@@ -12,13 +23,14 @@ class Simulation {
         double time_a; // time until next arrival
         double time_c = INFINITY; // time until next phase completion
         QueryGenerator *query_generator;
-        std::vector<Query *> queue;
+        std::list<Query *> queue;
+        Policy policy;
         std::vector<Query *> processor;
         double jobs_time = 0; // keep track of average number of jobs in the system * global time
 
     public:
 
-        Simulation(int cores, QueryGenerator *query_generator); 
+        Simulation(int cores, Policy policy, QueryGenerator *query_generator); 
 
         double getTime();
 
@@ -28,7 +40,7 @@ class Simulation {
 
         int getNJobs();
 
-        std::vector<Query *> getQueue();
+        std::list<Query *> getQueue();
 
         std::vector<Query *> getProcessor();
 

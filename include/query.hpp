@@ -25,12 +25,14 @@ struct Query {
         time = time * n_cores;
         phases.front().size -= time;
         size -= time;
-        if (phases.front().size < 0) {
-            std::cout << "!!!!!!!!!!!!!!!!!" << std::endl;
-        }
+        
         if (std::abs(phases.front().size) <= 1e-7f) {
             finishPhase();
             return 1;
+        }
+        if (phases.front().size < 0) {
+            printQuery();
+            throw "invalid phase size.";
         } 
             return 0;
     }

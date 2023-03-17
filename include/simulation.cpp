@@ -2,8 +2,9 @@
 #include "simulation.hpp"
 
 
-Simulation::Simulation(int cores, QueryGenerator *query_generator) {
+Simulation::Simulation(int cores, Policy policy,  QueryGenerator *query_generator) {
     this->cores = cores;
+    this->policy = policy;
     this->query_generator = query_generator;
 };
 
@@ -27,7 +28,7 @@ int Simulation::getNJobs() {
 }
 
 
-std::vector<Query *> Simulation::getQueue() {
+std::list<Query *> Simulation::getQueue() {
     return queue;
 }
 
@@ -57,7 +58,7 @@ int Simulation::run() {
                                                   
     if (time_n == time_a) { // if time_next is time_arrival
         
-//        std::cout << std::endl << "arrival occurs; ";
+        // std::cout << std::endl << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
 
@@ -71,7 +72,7 @@ int Simulation::run() {
 
     } else { // if time_n == time_c
         
-//        std::cout << std::endl << "phase finishes; ";
+        // std::cout << std::endl << "phase finishes; ";
         
         time_a -= time_n;
 
@@ -86,6 +87,10 @@ int Simulation::run() {
     }
 
     jobs_time += getNJobs() * time_n;
+
+    if (getNJobs() < 0) {
+        throw "Invalid number of jobs.";
+    }
 
     Simulation::output();
 
@@ -166,22 +171,40 @@ void Simulation::procUpdate(double time) {
 
 
 int Simulation::queueAllocate(Query *query) {
-    queue.push_back(query);
+
+    if (policy == FCFS) {
+        for (std::list<Query *>::iterator query_p = queue.begin(); query_p != queue.end(); ++query_p) {
+            if (query->arrival < (*query_p)->arrival) {
+                queue.insert(query_p, query);
+                return 1;
+            }
+        }
+        queue.push_back(query);
+    }
+
+    else if (policy == SJF) {
+        for (std::list<Query *>::iterator query_p = queue.begin(); query_p != queue.end(); ++query_p) {
+            if (query->size < (*query_p)->size) {
+                queue.insert(query_p, query);
+                return 1;
+            }
+        }
+        queue.push_back(query);
+    }
+
     return 1;
 }
 
 
 int Simulation::queueGet() {
-    for (int i=0; i<queue.size(); i++) {
+    for (std::list<Query *>::iterator query_p = queue.begin(); query_p != queue.end(); ++query_p) {
         if (used_cores >= cores) {
             return 1;
         }
-        Query *query = queue[i];
-        int n_cores = check(query);
+        int n_cores = check(*query_p);
         if (n_cores != 0) {
-            procAllocate(query, n_cores);
-            queue.erase(queue.begin()+i);
-            i--;
+            procAllocate(*query_p, n_cores);
+            queue.erase(query_p);
         }
     }
     return 1;
@@ -200,6 +223,6 @@ void Simulation::output() {
     for (Query *query : queue) {
         query->printQuery();
     }
-    */
     std::cout << getNJobs() << " " << jobs_time << std::endl;
+    */
 }
