@@ -1,3 +1,6 @@
+#ifndef QUERY_H
+#define QUERY_H
+
 #include "phase.hpp"
 #include <vector>
 #include <iostream>
@@ -46,10 +49,12 @@ struct Query {
     }
 
     void printQuery() {
-        std::cout << "n_cores: " << n_cores << ", phases: ";
+        std::cout << "n_cores: " << n_cores << ", size: " << size << ", phases: ";
         for (Phase phase : phases) {
             std::cout << "{" << phase.multiprogramming << ", " << phase.size << "}, ";
         }
         std::cout << std::endl;
     }
 };
+
+#endif

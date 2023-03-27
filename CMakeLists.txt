@@ -11,7 +11,11 @@ add_subdirectory(src)
 
 file(GLOB SOURCES "src/*.cpp")
 add_executable(ClickHouseSimulation ${SOURCES})
-target_link_libraries(ClickHouseSimulation PUBLIC simulation_lib)
+
+find_package(PythonLibs REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+target_link_libraries(ClickHouseSimulation PUBLIC simulation_lib ${PYTHON_LIBRARIES})
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")

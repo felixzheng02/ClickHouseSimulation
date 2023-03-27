@@ -1,6 +1,9 @@
+#ifndef SIMULATION_H
+#define SIMULATION_H
+
 #include <cmath>
 #include <vector>
-#include <list>
+#include <set>
 #include "generation.hpp"
 
 
@@ -10,27 +13,28 @@ enum Policy {
     SRPT = 2
 };
 
-
 std::string getText(Policy policy);
 
 
 class Simulation {
     private:
-
+        typedef bool (*CompareFunc)(Query * query_1, Query * query_2);
         int cores = 8; // total cores available
         int used_cores = 0; // number of cores occupied
         double time = 0.0; // global time
         double time_a; // time until next arrival
         double time_c = INFINITY; // time until next phase completion
-        QueryGenerator *query_generator;
-        std::list<Query *> queue;
+        QueryGenerator query_generator;
+        std::multiset<Query *, CompareFunc> queue;
         Policy policy;
-        std::vector<Query *> processor;
+        std::multiset<Query *, CompareFunc> processor;
         double jobs_time = 0; // keep track of average number of jobs in the system * global time
 
     public:
 
-        Simulation(int cores, Policy policy, QueryGenerator *query_generator); 
+        Simulation(int cores, Policy policy, CompareFunc compare, QueryGenerator query_generator); 
+
+        ~Simulation();
 
         double getTime();
 
@@ -40,9 +44,9 @@ class Simulation {
 
         int getNJobs();
 
-        std::list<Query *> getQueue();
+        std::multiset<Query *, CompareFunc> getQueue();
 
-        std::vector<Query *> getProcessor();
+        std::multiset<Query *, CompareFunc> getProcessor();
 
         double getJobsTime();
 
@@ -73,6 +77,8 @@ class Simulation {
         // if current phase finishes, start next phase
         // update time_c
         void procUpdate(double time);
+        
+        void timeCUpdate();
 
         // insert Query * into queue
         int queueAllocate(Query *query);
@@ -84,4 +90,8 @@ class Simulation {
         
         // produce information
         void output();
+
+        void printProcessor();
 };
+
+#endif

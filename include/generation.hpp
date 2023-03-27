@@ -1,3 +1,6 @@
+#ifndef GENERATION_H 
+#define GENERATION_H
+
 #include <random>
 #include <fstream>
 #include <cmath>
@@ -123,3 +126,5 @@ class QueryGenerator : public Generator<Query> {
 //};
 
 //typedef MemoryBoundGenerator ZipfGenerator;
+
+#endif

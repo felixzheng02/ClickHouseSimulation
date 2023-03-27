@@ -1,7 +1,6 @@
 #include "../include/simulation.hpp"
 #include <iostream>
 
-
 int ExpExp(int n_cores, double arrival_lambda, double phase_size_lambda, int n_iteration);
 
 
@@ -16,34 +15,46 @@ std::string getText(Policy policy) {
     }
 }
 
+bool FCFSCompare(Query *query_1, Query *query_2) {
+    return query_1->arrival < query_2->arrival;
+}
 
 int main() {
 
     int n_cores = 8;
-    std::vector<Policy> policies = {FCFS, SJF};
-    double arrival_lambda = 1;
+    std::vector<Policy> policies = {FCFS, SJF, SRPT};
+    double arrival_lambda = 2;
     
     for (Policy policy : policies) {
         std::ofstream data;
         data.open ("../data/exp_exp_" + getText(policy) + ".csv");
         data << "phase_size, mean_jobs, \n";
 
-        for (double size=0.1; size<3.5; size+=0.1) {
+        auto compare_func_arrival = [](Query *query_1, Query *query_2) {
+            return query_1->arrival < query_2->arrival;
+        };
 
-            Distribution<double> *arrival_dist = new ExponentialDistribution(arrival_lambda);
-            Distribution<double> *phase_size_dist = new ExponentialDistribution(1/size);
-            QueryGenerator *query_generator = new QueryGenerator(arrival_dist, phase_size_dist);
+        auto compare_func_size = [](Query *query_1, Query *query_2) {
+            return query_1->size < query_2->size;
+        };
 
-            Simulation *simulation = new Simulation(n_cores, policy, query_generator);
-            simulation->initialize();
+        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT) ? compare_func_size : compare_func_arrival;
 
-            for (int i=0; i<2000; i++) {
-                simulation->run();
+        for (double size_lambda=0.1; size_lambda<4; size_lambda+=0.05) {
+
+            ExponentialDistribution arrival_dist(arrival_lambda);
+            ExponentialDistribution phase_size_dist(size_lambda);
+            QueryGenerator query_generator(&arrival_dist, &phase_size_dist);
+                       
+            Simulation simulation(n_cores, policy, compare_func, query_generator);
+            simulation.initialize();
+
+            for (int i=0; i<1000; i++) {
+                simulation.run();
             }
 
-            data << size << ", " << simulation->getMeanJobs() << ", \n";
+            data << size_lambda << ", " << simulation.getMeanJobs() << ", \n";
 
-            delete simulation;
             // ExpExp(n_cores, arrival_lambda, phase_size_lambda - i, 100);
         }
 
