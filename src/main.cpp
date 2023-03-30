@@ -10,8 +10,10 @@ std::string getText(Policy policy) {
             return "FCFS";
         case SJF:
             return "SJF";
-        case SRPT:
-           return "SRPT";
+        case SRPT_query:
+           return "SRPT_query";
+        case SRPT_phase:
+           return "SRPT_phase";
     }
 }
 
@@ -21,8 +23,8 @@ bool FCFSCompare(Query *query_1, Query *query_2) {
 
 int main() {
 
-    int n_cores = 8;
-    std::vector<Policy> policies = {FCFS, SJF, SRPT};
+    int n_cores = 64;
+    std::vector<Policy> policies = {FCFS, SJF, SRPT_query, SRPT_phase};
     double arrival_lambda = 2;
     
     for (Policy policy : policies) {
@@ -38,12 +40,12 @@ int main() {
             return query_1->size < query_2->size;
         };
 
-        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT) ? compare_func_size : compare_func_arrival;
+        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT_phase) ? compare_func_size : compare_func_arrival;
 
-        for (double size_lambda=0.1; size_lambda<4; size_lambda+=0.05) {
+        for (double size=1.1; size<100; size+=0.1) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
-            ExponentialDistribution phase_size_dist(size_lambda);
+            ExponentialDistribution phase_size_dist(1/size);
             QueryGenerator query_generator(&arrival_dist, &phase_size_dist);
                        
             Simulation simulation(n_cores, policy, compare_func, query_generator);
@@ -53,7 +55,7 @@ int main() {
                 simulation.run();
             }
 
-            data << size_lambda << ", " << simulation.getMeanJobs() << ", \n";
+            data << size << ", " << simulation.getMeanJobs() << ", \n";
 
             // ExpExp(n_cores, arrival_lambda, phase_size_lambda - i, 100);
         }

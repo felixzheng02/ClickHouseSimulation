@@ -8,9 +8,10 @@
 
 
 enum Policy {
-    FCFS = 0,
-    SJF = 1,
-    SRPT = 2
+    FCFS,
+    SJF,
+    SRPT_query,
+    SRPT_phase
 };
 
 std::string getText(Policy policy);
@@ -77,7 +78,7 @@ class Simulation {
         // if current phase finishes, start next phase
         // update time_c
         void procUpdate(double time);
-        
+       
         void timeCUpdate();
 
         // insert Query * into queue
