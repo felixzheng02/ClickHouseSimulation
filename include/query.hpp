@@ -11,6 +11,8 @@ struct Query {
     double size; // remaining processing time
     double memory = 0; // amount of memory required
     int n_cores = 0; // number of cores it is running on
+
+    Query(std::vector<Phase> phases_, double arrival_, double size_, double memory_, int n_cores_) : phases(phases_), arrival(arrival_), size(size_), memory(memory_), n_cores(n_cores_) {}
     
     Phase getNextPhase() {
         return phases.front();

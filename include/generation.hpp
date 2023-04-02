@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cmath>
 #include <array>
+#include <memory>
 #include "query.hpp"
 
 template <class T>
@@ -46,12 +47,13 @@ class UniformDistribution : public Distribution<double> {
 
 class ParetoDistribution : public UniformDistribution {
 	double alpha;
+    double size;
     public:
-	ParetoDistribution(unsigned int seed, double alpha = 1.0) : UniformDistribution(seed), alpha(alpha) {}
-	ParetoDistribution(double alpha = 1.0) : UniformDistribution(), alpha(alpha) {}
+	ParetoDistribution(unsigned int seed, double alpha = 1.0, double size = 1.0) : UniformDistribution(seed), alpha(alpha), size(size) {}
+	ParetoDistribution(double alpha = 1.0, double size = 1.0) : UniformDistribution(), alpha(alpha), size(size) {}
 	double sample() override {
 		double u = UniformDistribution::sample();
-		return std::pow(1 - u, -1 / alpha) * (alpha - 1.0) / alpha;
+		return size * std::pow(1 - u, -1 / alpha) * (alpha - 1.0) / alpha;
 	}
 };
 
@@ -102,8 +104,8 @@ class QueryGenerator : public Generator<Query> {
     PhaseGenerator *phaseGenerator;
     public:
 	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist);
-    Query *nextP(); 
-    Query *nextP(double arrival_time);  
+    std::shared_ptr<Query> nextP(); 
+    std::shared_ptr<Query> nextP(double arrival_time);  
     Distribution<double> *getArrivalDist();
 };
 

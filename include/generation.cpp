@@ -14,25 +14,22 @@ QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distr
     phaseGenerator = new PhaseGenerator(phase_size_distribution);
 }
 
-Query *QueryGenerator::nextP() {
+std::shared_ptr<Query> QueryGenerator::nextP() {
     return QueryGenerator::nextP(arrival_dist->sample());
 }
 
-Query *QueryGenerator::nextP(double arrival_time) {
-    Query *query = new Query();
-    double size = 0;
-    query->phases.push_back(phaseGenerator->next(4));
-    query->phases.push_back(phaseGenerator->next(1));
-    query->phases.push_back(phaseGenerator->next(1));
-    query->phases.push_back(phaseGenerator->next(1));
-    query->phases.push_back(phaseGenerator->next(2));
-    for (int i=0; i<query->phases.size(); i++) {
-        size += query->phases[i].size;
+std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
+    std::vector<Phase> phases;
+    double size;
+    phases.push_back(phaseGenerator->next(4));
+    phases.push_back(phaseGenerator->next(1));
+    phases.push_back(phaseGenerator->next(1));
+    phases.push_back(phaseGenerator->next(1));
+    phases.push_back(phaseGenerator->next(2));
+    for (int i=0; i<phases.size(); i++) {
+        size += phases[i].size;
     }
-    query->arrival = arrival_time;
-    query->memory = 0;
-    query->size = size;
-    return query;
+    return std::make_shared<Query>(phases, arrival_time, size, 0, 0);
 }
 
 
