@@ -27,7 +27,7 @@ bool FCFSCompare(Query *query_1, Query *query_2) {
 int main() {
 
     int n_cores = 64;
-    std::vector<Policy> policies = {FCFS, SJF, SRPT_query, SRPT};
+    std::vector<Policy> policies = {FCFS, SJF, SRPT};
     double arrival_lambda = 1;
     
     for (Policy policy : policies) {
@@ -45,7 +45,7 @@ int main() {
 
         auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT) ? compare_func_size : compare_func_arrival;
 
-        for (double size=1; size<15; size+=0.05) {
+        for (double size=1; size<15; size+=1) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
             ParetoDistribution phase_size_dist(1.5, size);
@@ -54,7 +54,7 @@ int main() {
             Simulation simulation(n_cores, policy, compare_func, query_generator);
             simulation.initialize();
 
-            for (int i=0; i<100; i++) {
+            for (int i=0; i<10000; i++) {
                 simulation.run();
             }
 
