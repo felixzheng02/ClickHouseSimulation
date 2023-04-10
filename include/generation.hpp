@@ -86,22 +86,17 @@ class ZipfianDistribution : public Distribution<int> {
 	}
 };
 
-template <class T>
-class Generator {
-    public:
-	Generator() {}
-};
 
-class PhaseGenerator : public Generator<Phase> {
+class PhaseGenerator {
     Distribution<double> *dist;
     public:
     PhaseGenerator(Distribution<double> *distribution);
     Phase next(int multiprogramming);
 };
 
-class QueryGenerator : public Generator<Query> {
+class QueryGenerator {
     Distribution<double> *arrival_dist;
-    PhaseGenerator *phaseGenerator;
+    PhaseGenerator phaseGenerator;
     public:
 	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist);
     std::shared_ptr<Query> nextP(); 

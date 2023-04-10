@@ -9,9 +9,8 @@ Phase PhaseGenerator::next(int multiprogramming) {
     return {multiprogramming, dist->sample()};
 }
 
-QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distribution<double> *phase_size_distribution) {
+QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distribution<double> *phase_size_distribution) : phaseGenerator(phase_size_distribution) {
 	arrival_dist = arrival_distribution; 
-    phaseGenerator = new PhaseGenerator(phase_size_distribution);
 }
 
 std::shared_ptr<Query> QueryGenerator::nextP() {
@@ -27,8 +26,8 @@ std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
 
     std::vector<Phase> phases;
     double size = 0;
-    phases.push_back(phaseGenerator->next(64));
-    phases.push_back(phaseGenerator->next(1));
+    phases.push_back(phaseGenerator.next(64));
+    phases.push_back(phaseGenerator.next(1));
     for (int i=0; i<phases.size(); i++) {
         size += phases[i].size;
     }
