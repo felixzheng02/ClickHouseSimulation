@@ -19,13 +19,16 @@ std::shared_ptr<Query> QueryGenerator::nextP() {
 }
 
 std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
+    /*
+    std::random_device rd; // obtain a random number from hardware
+    std::mt19937 gen(rd()); // seed the generator
+    std::uniform_int_distribution<> distr(25, 63); // define the range
+    */
+
     std::vector<Phase> phases;
-    double size;
-    phases.push_back(phaseGenerator->next(4));
+    double size = 0;
+    phases.push_back(phaseGenerator->next(64));
     phases.push_back(phaseGenerator->next(1));
-    phases.push_back(phaseGenerator->next(1));
-    phases.push_back(phaseGenerator->next(1));
-    phases.push_back(phaseGenerator->next(2));
     for (int i=0; i<phases.size(); i++) {
         size += phases[i].size;
     }

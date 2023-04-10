@@ -45,20 +45,25 @@ int main() {
 
         auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT) ? compare_func_size : compare_func_arrival;
 
-        for (double size=1; size<15; size+=1) {
+        for (double size=1; size<=50; size+=0.05) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
             ParetoDistribution phase_size_dist(1.5, size);
             QueryGenerator query_generator(&arrival_dist, &phase_size_dist);
                        
-            Simulation simulation(n_cores, policy, compare_func, query_generator);
-            simulation.initialize();
-
-            for (int i=0; i<10000; i++) {
-                simulation.run();
+            int iteration = 10; 
+            double mean_jobs = 0;
+            for (int i=0; i<(iteration-1); i++) {
+                Simulation simulation(n_cores, policy, compare_func, query_generator);
+                simulation.initialize();
+                for (int j=0; j<10000; j++) {
+                    simulation.run();
+                }
+                mean_jobs += simulation.getMeanJobs();
             }
+            mean_jobs = mean_jobs/iteration;
 
-            data << size << ", " << simulation.getMeanJobs() << ", \n";
+            data << size << ", " << mean_jobs << ", \n";
 
             // ExpExp(n_cores, arrival_lambda, phase_size_lambda - i, 100);
         }

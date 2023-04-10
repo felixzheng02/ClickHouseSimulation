@@ -291,6 +291,7 @@ void Simulation::timeCUpdate() {
 
 
 int Simulation::queueAllocate(std::shared_ptr<Query> query) {
+    query->setNCores(0);
     queue.insert(query);
     return 1;
 }
