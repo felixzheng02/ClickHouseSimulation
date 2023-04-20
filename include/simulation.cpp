@@ -5,7 +5,7 @@
 #include "simulation.hpp"
 
 
-Simulation::Simulation(int cores, Policy policy, CompareFunc compare_func, QueryGenerator query_generator) : cores(cores), policy(policy), query_generator(query_generator), queue(compare_func), processor(compare_func) {
+Simulation::Simulation(int cores, Policy policy, CompareFunc compare_func, QueryGenerator query_generator) : compare_func(compare_func), cores(cores), policy(policy), query_generator(query_generator), queue(compare_func), processor(compare_func) {
 
 }
 
@@ -63,7 +63,7 @@ int Simulation::run() {
                                                   
     if (time_n == time_a) { // if time_next is time_arrival
         
-        // std::cout << std::endl << "arrival occurs; ";
+        //std::cout << std::endl << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
         
@@ -77,7 +77,7 @@ int Simulation::run() {
 
     } else { // if time_n == time_c
         
-        // std::cout << std::endl << "phase finishes; ";
+        //std::cout << std::endl << "phase finishes; ";
 
         time_a -= time_n;
 
@@ -93,7 +93,7 @@ int Simulation::run() {
 
     jobs_time += getNJobs() * time_n;
 
-    // Simulation::output();
+    //Simulation::output();
     
     return 1;
     
@@ -139,7 +139,7 @@ int Simulation::check(std::shared_ptr<Query> query) {
         else if ((*processor.begin())->n_cores > 1) return 1;
         else if (query->size < (*std::prev(processor.end()))->size) return 1;
     }
-    
+
     return 0;
 }
 
@@ -175,8 +175,9 @@ int Simulation::procAllocate(std::shared_ptr<Query> query, int n_cores) {
     }
 
     else if (policy == NEW_1) {
-        std::multiset<std::shared_ptr<Query>, CompareFunc> tmp_processor;
+        std::multiset<std::shared_ptr<Query>, CompareFunc> tmp_processor(compare_func);
         tmp_processor.insert(query);
+        used_cores = 1;
         for (auto query_p = processor.begin(); query_p != processor.end(); ++query_p) {
             std::shared_ptr<Query> cur_query = *query_p;
             if (used_cores < cores) {
@@ -193,10 +194,12 @@ int Simulation::procAllocate(std::shared_ptr<Query> query, int n_cores) {
         for (auto query_p = processor.begin(); query_p != processor.end(); ++query_p) {
             std::shared_ptr<Query> cur_query = *query_p;
             if (used_cores < cores) {
-                cur_query->setNCores(std::min(cores-used_cores, cur_query->getNextPhase().multiprogramming));
-                used_cores += cur_query->n_cores;
+                cur_query->setNCores(std::min(cores-used_cores+1, cur_query->getNextPhase().multiprogramming));
+                used_cores += cur_query->n_cores-1;
+                time_c = (cur_query->getCurSize() < time_c) ? cur_query->getCurSize() : time_c; 
             } else {
-                break;
+                time_c = (cur_query->getCurSize() < time_c) ? cur_query->getCurSize() : time_c; 
+                continue;
             }
         }
     }

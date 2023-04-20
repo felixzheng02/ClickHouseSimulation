@@ -7,6 +7,8 @@ int ExpExp(int n_cores, double arrival_lambda, double phase_size_lambda, int n_i
 
 std::string getText(Policy policy) {
     switch (policy) {
+        case RR:
+            return "RR";
         case FCFS:
             return "FCFS";
         case SJF:
@@ -27,7 +29,7 @@ bool FCFSCompare(Query *query_1, Query *query_2) {
 int main() {
 
     int n_cores = 64;
-    std::vector<Policy> policies = {FCFS, SJF, SRPT};
+    std::vector<Policy> policies = {SRPT};
     double arrival_lambda = 1;
     
     for (Policy policy : policies) {
@@ -43,17 +45,17 @@ int main() {
             return query_1->size < query_2->size;
         };
 
-        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT) ? compare_func_size : compare_func_arrival;
+        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT) ? compare_func_size : (policy == NEW_1) ? compare_func_size : compare_func_arrival;
 
         for (double size=1; size<=50; size+=5) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
             ParetoDistribution phase_size_dist(1.5, size);
-            QueryGenerator query_generator(&arrival_dist, &phase_size_dist);
+            QueryGenerator query_generator(&arrival_dist, &phase_size_dist, n_cores);
                        
-            int iteration = 10; 
+            int iteration = 100; 
             double mean_jobs = 0;
-            for (int i=0; i<(iteration-1); i++) {
+            for (int i=0; i<=(iteration-1); i++) {
                 Simulation simulation(n_cores, policy, compare_func, query_generator);
                 simulation.initialize();
                 for (int j=0; j<10000; j++) {

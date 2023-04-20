@@ -20,6 +20,7 @@ NEW_1
 */
 
 enum Policy {
+    RR,
     FCFS,
     SJF,
     SRPT_query,
@@ -33,6 +34,7 @@ std::string getText(Policy policy);
 class Simulation {
     private:
         typedef bool (*CompareFunc)(std::shared_ptr<Query> query_1, std::shared_ptr<Query> query_2);
+        CompareFunc compare_func;
         int cores = 8; // total cores available
         int used_cores = 0; // number of cores occupied
         double time = 0.0; // global time
