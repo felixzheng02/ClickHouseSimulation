@@ -115,10 +115,6 @@ int Simulation::allocate(std::shared_ptr<Query> query) {
 int Simulation::check(std::shared_ptr<Query> query) {
     if (query->phases.size() == 0) return 0;
     
-    if (policy == FCFS | policy == SJF) {
-        return std::min(cores-used_cores, query->getNextPhase().multiprogramming);
-    } 
-
     else if (policy == SRPT_query) {
         if (used_cores < cores) {
             return std::min(cores-used_cores, query->getNextPhase().multiprogramming);
@@ -127,11 +123,6 @@ int Simulation::check(std::shared_ptr<Query> query) {
         } else {
             return 0;
         }
-    }
-
-    else if (policy == SRPT) { // pseudo check
-        if (used_cores < cores) return 1;
-        else if (query->size < (*std::prev(processor.end()))->size) return 1;
     }
 
     else if (policy == NEW_1) {
@@ -145,36 +136,8 @@ int Simulation::check(std::shared_ptr<Query> query) {
 
 
 int Simulation::procAllocate(std::shared_ptr<Query> query, int n_cores) {
-    if (policy == SRPT) {
-        // for SRPT, smaller size query will be allocated more cores -> only need to check new query to update time_c
-        for (std::multiset<std::shared_ptr<Query>, CompareFunc>::reverse_iterator query_p = processor.rbegin(); query_p != processor.rend();) {
-            if (cores-used_cores >= query->getNextPhase().multiprogramming) {
-                break;
-            }
-            std::shared_ptr<Query> cur_query = *query_p;
-            if (query->size < cur_query->size) {
-                used_cores -= cur_query->n_cores;
-                if (cores-used_cores > query->getNextPhase().multiprogramming) { // if this is it, there are extra cores
-                    cur_query->setNCores(cores-used_cores-query->getNextPhase().multiprogramming);
-                    used_cores += cur_query->n_cores;
-                    break;
-                } else {
-                    processor.erase(std::next(query_p).base());
-                    queueAllocate(cur_query);
-                    continue;
-                }
-            } else {
-                break;
-            }
-            ++query_p; // should never reach
-        }
-        query->setNCores(std::min(cores-used_cores, query->getNextPhase().multiprogramming));
-        used_cores += query->n_cores;
-        processor.insert(query);
-        time_c = (query->getCurSize() < time_c) ? query->getCurSize() : time_c;
-    }
-
-    else if (policy == NEW_1) {
+    
+    if (policy == NEW_1) {
         std::multiset<std::shared_ptr<Query>, CompareFunc> tmp_processor(compare_func);
         tmp_processor.insert(query);
         used_cores = 1;
@@ -233,7 +196,7 @@ void Simulation::procUpdate(double time) {
 
     for (auto query_p = processor.begin(); query_p != processor.end();) {
 
-        if (policy == SRPT | policy == NEW_1) {
+        if (policy == NEW_1) {
             std::shared_ptr<Query> query = *query_p;
             query_p = processor.erase(query_p);
             used_cores -= query->n_cores;

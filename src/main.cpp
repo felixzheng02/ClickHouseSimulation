@@ -9,14 +9,8 @@ std::string getText(Policy policy) {
     switch (policy) {
         case RR:
             return "RR";
-        case FCFS:
-            return "FCFS";
-        case SJF:
-            return "SJF";
         case SRPT_query:
            return "SRPT_query";
-        case SRPT:
-           return "SRPT";
         case NEW_1:
            return "NEW_1";
     }
@@ -29,7 +23,7 @@ bool FCFSCompare(Query *query_1, Query *query_2) {
 int main() {
 
     int n_cores = 64;
-    std::vector<Policy> policies = {SRPT};
+    std::vector<Policy> policies = {SRPT_query};
     double arrival_lambda = 1;
     
     for (Policy policy : policies) {

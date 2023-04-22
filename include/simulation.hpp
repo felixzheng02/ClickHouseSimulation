@@ -21,10 +21,7 @@ NEW_1
 
 enum Policy {
     RR,
-    FCFS,
-    SJF,
     SRPT_query,
-    SRPT,
     NEW_1
 };
 
