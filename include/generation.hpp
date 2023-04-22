@@ -104,7 +104,7 @@ class QueryGenerator {
     std::shared_ptr<Query> nextP(); 
     std::shared_ptr<Query> nextP(double arrival_time);  
     Distribution<double> *getArrivalDist();
-    double generatePhases1(std::vector<Phase> *phases);
+    double generatePhases1(std::vector<Block> *blocks);
 };
 
 //class MemoryBoundGenerator : public Generator {

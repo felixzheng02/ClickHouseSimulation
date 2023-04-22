@@ -29,25 +29,28 @@ std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
     std::uniform_int_distribution<> distr(25, 63); // define the range
     */
 
-    std::vector<Phase> phases;
-    double size = generatePhases1(&phases);
-    return std::make_shared<Query>(phases, arrival_time, size, 0, 0);
+    std::vector<Block> blocks;
+    double size = generatePhases1(&blocks);
+    return std::make_shared<Query>(blocks, arrival_time, size, 0, 0);
 }
 
-double QueryGenerator::generatePhases1(std::vector<Phase> *phases) {
+double QueryGenerator::generatePhases1(std::vector<Block> *blocks) {
     double size = 0;
-    Phase cur_phase = phaseGenerator.next(1);
-    phases->push_back(cur_phase);
-    size += cur_phase.size;
-    cur_phase = phaseGenerator.next(multiprogramming);
-    phases->push_back(cur_phase);
-    size += cur_phase.size;
-    cur_phase = phaseGenerator.next(multiprogramming);
-    phases->push_back(cur_phase);
-    size += cur_phase.size;
-    cur_phase = phaseGenerator.next(1);
-    phases->push_back(cur_phase);
-    size += cur_phase.size;
+    std::vector<Phase> phases_1, phases_2;
+    Phase phase = phaseGenerator.next(multiprogramming);
+    phases_1.push_back(phase);
+    size += phase.size;
+    phase = phaseGenerator.next(1);
+    phases_1.push_back(phase);
+    size += phase.size;
+    Block block = Block(phases_1);
+    blocks->push_back(block);
+    phase = phaseGenerator.next(1);
+    phases_2.push_back(phase);
+    size += phase.size;
+    block = Block(phases_2);
+    blocks->push_back(block);
+    
     return size;
 }
 
