@@ -9,30 +9,36 @@ struct Block {
     std::vector<Phase> phases; // never access phases directly, use running_phases and waiting_phases
     std::vector<Phase *> running_phases;
     std::vector<Phase *> waiting_phases;
+    double size = 0;
 
     Block(std::vector<Phase> phases) : phases(phases) {
         for (Phase phase : phases) {
             waiting_phases.push_back(&phase);
+            size += phase.size;
         }
     }
-
+    
+    // return how many cores left
     int allocate(int n_cores) {
-        while (n_cores > 0) {
+        while (n_cores > 0 && waiting_phases.size() > 0) {
             n_cores = allocateOnePhase(n_cores);
         }
-        return 1;
+        return n_cores;
     }
+    
 
     int allocateOnePhase(int n_cores) {
 
         std::random_device rd; // obtain a random number from hardware
         std::mt19937 gen(rd()); // seed the generator
-        std::uniform_int_distribution<> distr_phase(0, waiting_phases.size()-1); // define the range
-        std::uniform_int_distribution<> distr_cores(1, n_cores);
-
+        
+        std::uniform_int_distribution<> distr_phase(0, waiting_phases.size()-1);
         int index = distr_phase(gen);
-        int cores = distr_cores(gen);
         Phase *phase_p = waiting_phases[index];
+
+        std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase_p->multiprogramming));
+        int cores = distr_cores(gen);
+
         phase_p->allocate(cores); 
         n_cores -= cores;
         running_phases.push_back(phase_p);
@@ -42,17 +48,29 @@ struct Block {
     }
 
 
-    // if some phase finishes, return 1
-    int update(double time) {
-        int result = 0;
+    // return Block size decrement
+    double update(double time) {
+        double size_dec = 0;
         for (auto phase_p = running_phases.begin(); phase_p != running_phases.end();) {
-            int finished = (*phase_p)->update(time); 
-            if (finished) {
-                result = 1;
+            Phase *cur_phase_p = *phase_p;
+            double cur_size_dec = cur_phase_p->update(time); 
+            size_dec += cur_size_dec;
+            if (std::abs(cur_phase_p->size) <= 1e-7f) {
                 phase_p = running_phases.erase(phase_p);
+            } else {
+                ++phase_p;
             }
         }
-        return result;
+        size -= size_dec;
+        return size_dec; 
+    }
+
+    double getTimeC() { // needs modification to improve efficiency
+        double time_c = INFINITY;
+        for (auto phase_p = running_phases.begin(); phase_p != running_phases.end(); ++phase_p) {
+            time_c = ((*phase_p)->getTimeC() < time_c) ? (*phase_p)->getTimeC() : time_c;
+        }
+        return time_c;
     }
 
     int checkFinished() {

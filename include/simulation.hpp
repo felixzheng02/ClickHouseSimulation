@@ -76,6 +76,8 @@ class Simulation {
         // if cannot do that, allocate to the queue
         int allocate(std::shared_ptr<Query> query);
 
+        int deallocate(std::shared_ptr<Query> query);
+
         // check if a query can be allocated in processor
         // return number of cores that should be allocated
         // return 0 if cannot be allocated
@@ -84,14 +86,14 @@ class Simulation {
         // insert Query * into processor
         // update used_cores
         // update time_c
-        int procAllocate(std::shared_ptr<Query> query, int n_cores);
+        int procAllocate(std::shared_ptr<Query> query);
 
         // update each query's current phase's size
         // if current phase finishes, start next phase
         // update time_c
         void procUpdate(double time);
        
-        void timeCUpdate();
+        void updateTimeC(double time_query_c);
 
         // insert Query * into queue
         int queueAllocate(std::shared_ptr<Query> query);
@@ -100,6 +102,8 @@ class Simulation {
         // based on scheduling policy (currently FCFS)
         // until processor's cores are all occupied
         int queueGet();
+
+        int queueToProc();
         
         // produce information
         void output();

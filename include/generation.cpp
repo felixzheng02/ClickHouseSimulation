@@ -6,12 +6,12 @@ PhaseGenerator::PhaseGenerator(Distribution<double> *distribution) {
 }
 
 Phase PhaseGenerator::next(int multiprogramming) {
-    return {multiprogramming, dist->sample()};
+    return {multiprogramming, 0, dist->sample()};
 }
 
 
 Phase PhaseGenerator::next(int multiprogramming, double size) {
-    return {multiprogramming, size};
+    return {multiprogramming, 0, size};
 }
 
 
@@ -31,7 +31,7 @@ std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
 
     std::vector<Block> blocks;
     double size = generatePhases1(&blocks);
-    return std::make_shared<Query>(blocks, arrival_time, size, 0, 0);
+    return std::make_shared<Query>(blocks, arrival_time, size);
 }
 
 double QueryGenerator::generatePhases1(std::vector<Block> *blocks) {

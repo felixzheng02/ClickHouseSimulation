@@ -2,8 +2,6 @@
 #include <iostream>
 #include <memory>
 
-int ExpExp(int n_cores, double arrival_lambda, double phase_size_lambda, int n_iteration);
-
 
 std::string getText(Policy policy) {
     switch (policy) {
@@ -16,9 +14,6 @@ std::string getText(Policy policy) {
     }
 }
 
-bool FCFSCompare(Query *query_1, Query *query_2) {
-    return query_1->arrival < query_2->arrival;
-}
 
 int main() {
 
@@ -39,7 +34,7 @@ int main() {
             return query_1->size < query_2->size;
         };
 
-        auto compare_func = (policy == FCFS) ? compare_func_arrival : (policy == SJF) ? compare_func_size : (policy == SRPT_query) ? compare_func_size : (policy == SRPT) ? compare_func_size : (policy == NEW_1) ? compare_func_size : compare_func_arrival;
+        auto compare_func = (policy == SRPT_query) ? compare_func_size : (policy == NEW_1) ? compare_func_size : compare_func_arrival;
 
         for (double size=1; size<=50; size+=5) {
 
@@ -69,26 +64,3 @@ int main() {
 
     return 1;
 }
-
-
-/*
-int ExpExp(int n_cores, double arrival_lambda, double phase_size_lambda, int n_iteration) {
-
-    Distribution<double> *arrival_dist = new ExponentialDistribution(arrival_lambda);
-    Distribution<double> *phase_size_dist = new ExponentialDistribution(phase_size_lambda);
-    QueryGenerator *query_generator = new QueryGenerator(arrival_dist, phase_size_dist);
-
-    Simulation *simulation = new Simulation(n_cores, query_generator);
-    simulation->initialize();
-
-    for (int i=0; i<n_iteration; i++) {
-        simulation->run();
-    }
-
-    std::cout << "mean jobs: " << simulation->getMeanJobs() << std::endl;
-
-    delete simulation;
-
-    return 1;
-}
-*/
