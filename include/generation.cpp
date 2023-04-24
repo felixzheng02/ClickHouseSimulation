@@ -43,13 +43,13 @@ double QueryGenerator::generatePhases1(std::vector<Block> *blocks) {
     phase = phaseGenerator.next(1);
     phases_1.push_back(phase);
     size += phase.size;
-    Block block = Block(phases_1);
+    Block block { phases_1 };
     blocks->push_back(block);
     phase = phaseGenerator.next(1);
     phases_2.push_back(phase);
     size += phase.size;
-    block = Block(phases_2);
-    blocks->push_back(block);
+    Block block_2 { phases_2 };
+    blocks->push_back(block_2);
     
     return size;
 }

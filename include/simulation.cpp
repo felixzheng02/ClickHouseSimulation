@@ -69,7 +69,7 @@ int Simulation::run() {
         
         std::shared_ptr<Query> query = query_generator.nextP(time_a);
 
-        queueAllocate(query); // allocate to queue, since Phase cannot be preempted
+        allocate(query);
        
         time_a = query_generator.getArrivalDist()->sample(); // generate new time_a
 
@@ -96,17 +96,24 @@ int Simulation::run() {
 }
 
 
-
-
-int Simulation::deallocate(std::shared_ptr<Query> query) {
-    return 1;
+// return 1 if allocated to processor, 0 otherwise
+int Simulation::allocate(std::shared_ptr<Query> query) {
+    if (used_cores < cores) {
+        used_cores += query->allocate(cores - used_cores);
+        updateTimeC(query->getTimeC());
+        processor.insert(query);
+        return 1;
+    } else {
+        // allocate() is only called when arrival occurs, no preemption is allowed (no Block finishes)
+        queueAllocate(query);
+        return 0;
+    }
 }
 
 
 void Simulation::procUpdate(double time) {
 
     time_c = INFINITY;
-    std::vector<std::shared_ptr<Query>> pointers;
     std::multiset<std::shared_ptr<Query>, CompareFunc> tmp_processor(compare_func);
 
     if (time == time_a) {
@@ -122,9 +129,8 @@ void Simulation::procUpdate(double time) {
             std::shared_ptr<Query> cur_query = *query_p;
             int finished = cur_query->update(time);
             if (finished) {
-                deallocate(cur_query);
-                processor.erase(query_p);
                 queueAllocate(cur_query);
+                processor.erase(query_p);
                 continue;
             }
         }

@@ -13,22 +13,23 @@ struct Query {
 
     Query(std::vector<Block> blocks, double arrival, double size) : blocks(blocks), arrival(arrival), size(size), cores(0) {}
     
-    Block getCurBlock() {
-        return blocks.front();
+    Block *getCurBlock() {
+        return &blocks.front();
     }
     
     // return how many cores used
     int allocate(int n_cores) {
-        cores = getCurBlock().allocate(n_cores);
-        return cores;
+        int used_cores = getCurBlock()->allocate(n_cores);
+        cores += used_cores;
+        return used_cores;
     }
 
     
     // return 1 if Block finishes (can be preempted)
     int update(double time) {
-        double cur_size_dec = getCurBlock().update(time);
+        double cur_size_dec = getCurBlock()->update(time);
         size -= cur_size_dec;
-        if (std::abs(getCurBlock().size) <= 1e-7f) {
+        if (std::abs(getCurBlock()->size) <= 1e-7f) {
             blocks.erase(blocks.begin());
             return 1;
         }
@@ -36,7 +37,7 @@ struct Query {
     }
 
     double getTimeC() {
-        return getCurBlock().getTimeC();
+        return getCurBlock()->getTimeC();
     }
 
     void finishBlock() {

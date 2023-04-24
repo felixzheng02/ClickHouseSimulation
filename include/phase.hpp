@@ -20,7 +20,7 @@ struct Phase {
     }
 
     int allocate(int n_cores) {
-        cores = n_cores;
+        cores += n_cores;
         return 1;
     }
 
