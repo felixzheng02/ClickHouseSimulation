@@ -36,7 +36,7 @@ int main() {
 
         auto compare_func = (policy == SRPT_query) ? compare_func_size : (policy == NEW_1) ? compare_func_size : compare_func_arrival;
 
-        for (double size=1; size<=50; size+=5) {
+        for (double size=1; size<=20; size+=5) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
             ParetoDistribution phase_size_dist(1.5, size);

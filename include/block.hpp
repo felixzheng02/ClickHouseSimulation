@@ -10,41 +10,33 @@ struct Block {
     std::vector<Phase> phases; // never change phases directly, use running_phases and waiting_phases
     std::vector<int> running_phases;
     std::vector<int> waiting_phases;
-    double size = 0;
 
     Block(std::vector<Phase> phases) : phases(phases) {
         for (int idx = 0; idx < phases.size(); idx++) {
             waiting_phases.push_back(idx);
-            size += phases[idx].size;
         }
-    }
-
-    int initialize() {
-        for (int idx = 0; idx < phases.size(); idx++) {
-            waiting_phases.push_back(idx);
-            size += phases[idx].size;
-        }
-        return 1;
     }
     
     // return how many cores used
-    int allocate(int n_cores) {
+    int allocate(int n_cores, int *query_cores) {
         int left_cores = n_cores;
         std::vector<int> allocated_phases;
-        while (left_cores > 0 && running_phases.size() != phases.size()) {
+        while (left_cores > 0 && (waiting_phases.size() != 0 || allocated_phases.size() != 0)) {
             for (auto idx_p = waiting_phases.begin(); idx_p != waiting_phases.end();) {
                 if (left_cores > 0) {
-                    left_cores = allocatePhase(idx_p, left_cores, &waiting_phases, &allocated_phases, &running_phases);
+                    left_cores = allocatePhase(idx_p, left_cores, query_cores, &waiting_phases, &allocated_phases, &running_phases);
+                } else {
+                    break;
                 }
             }
-            left_cores = allocateAlloc(left_cores, &allocated_phases, &running_phases);
+            left_cores = allocateAlloc(left_cores, query_cores, &allocated_phases, &running_phases);
         }
         running_phases.insert(running_phases.end(), allocated_phases.begin(), allocated_phases.end());
         return n_cores - left_cores;
     }
     
 
-    int allocatePhase(std::vector<int>::iterator idx_p, int n_cores, std::vector<int> *low, std::vector<int> *mid, std::vector<int> *up) {
+    int allocatePhase(std::vector<int>::iterator idx_p, int n_cores, int *query_cores, std::vector<int> *low, std::vector<int> *mid, std::vector<int> *up) {
 
         Phase *phase = &phases[(*low)[*idx_p]];
 
@@ -53,7 +45,7 @@ struct Block {
         std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase->multiprogramming - phase->cores));
         int cores = distr_cores(gen);
 
-        phase->allocate(cores); 
+        phase->allocate(cores, query_cores); 
         n_cores -= cores;
         if (phase->cores == phase->multiprogramming) {
             up->push_back((*low)[*idx_p]);
@@ -64,7 +56,7 @@ struct Block {
         return n_cores;
     }
 
-    int allocateAlloc(int n_cores, std::vector<int> *low, std::vector<int> *up) {
+    int allocateAlloc(int n_cores, int *query_cores, std::vector<int> *low, std::vector<int> *up) {
         
         std::vector<int> tmp_idx;
         for (auto idx_p = low->begin(); idx_p != low->end();) {
@@ -76,7 +68,7 @@ struct Block {
             std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase->multiprogramming - phase->cores));
             int cores = distr_cores(gen);
 
-            phase->allocate(cores); 
+            phase->allocate(cores, query_cores); 
             n_cores -= cores;
             if (phase->cores == phase->multiprogramming) {
                 up->push_back((*low)[*idx_p]);
@@ -89,21 +81,21 @@ struct Block {
         return n_cores;
     }
 
-    // return Block size decrement
-    double update(double time) {
-        double size_dec = 0;
+    // return 1 if all current running Phases are finished (can be preempted)
+    int update(double time, double *query_size, int *query_cores) {
         for (int idx = 0; idx < running_phases.size();) {
-            Phase cur_phase = phases[waiting_phases[idx]];
-            double cur_size_dec = cur_phase.update(time); 
-            size_dec += cur_size_dec;
-            if (std::abs(cur_phase.size) <= 1e-7f) {
+            Phase *cur_phase = &phases[running_phases[idx]];
+            int finished = cur_phase->update(time, query_size, query_cores); 
+            if (finished) {
                 running_phases.erase(running_phases.begin()+idx);
             } else {
                 idx++;
             }
         }
-        size -= size_dec;
-        return size_dec; 
+        if (running_phases.size() == 0) {
+            return 1;
+        }
+        return 0; 
     }
 
     double getTimeC() { // needs modification to improve efficiency

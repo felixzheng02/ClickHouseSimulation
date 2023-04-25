@@ -60,10 +60,12 @@ void Simulation::initialize() {
 int Simulation::run() {
 
     double time_n = std::min(time_a, time_c); // find time_next
+    
+    std::cout << "############################################" << std::endl;
                                                   
     if (time_n == time_a) { // if time_next is time_arrival
         
-        //std::cout << std::endl << "arrival occurs; ";
+        std::cout << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
         
@@ -77,7 +79,7 @@ int Simulation::run() {
 
     } else { // if time_n == time_c
         
-        //std::cout << std::endl << "phase finishes; ";
+        std::cout << "phase finishes; ";
 
         time_a -= time_n;
 
@@ -89,7 +91,9 @@ int Simulation::run() {
 
     jobs_time += getNJobs() * time_n;
 
-    //Simulation::output();
+    Simulation::output();
+    
+    std::cout << std::endl;
     
     return 1;
     
@@ -99,15 +103,17 @@ int Simulation::run() {
 // return 1 if allocated to processor, 0 otherwise
 int Simulation::allocate(std::shared_ptr<Query> query) {
     if (used_cores < cores) {
-        used_cores += query->allocate(cores - used_cores);
-        updateTimeC(query->getTimeC());
-        processor.insert(query);
-        return 1;
-    } else {
-        // allocate() is only called when arrival occurs, no preemption is allowed (no Block finishes)
-        queueAllocate(query);
-        return 0;
-    }
+        int cur_used_cores = query->allocate(cores - used_cores);
+        if (cur_used_cores > 0) {
+            used_cores += cur_used_cores;
+            updateTimeC(query->getTimeC());
+            processor.insert(query);
+            return 1;
+        }
+    } 
+    // allocate() is only called when arrival occurs, no preemption is allowed (no Block finishes)
+    queueAllocate(query);
+    return 0;
 }
 
 
@@ -125,33 +131,58 @@ void Simulation::procUpdate(double time) {
         }
         processor.swap(tmp_processor);
     } else {
-        for (auto query_p = processor.begin(); query_p != processor.end(); ++query_p) {
+        for (auto query_p = processor.begin(); query_p != processor.end();) {
             std::shared_ptr<Query> cur_query = *query_p;
+            used_cores -= cur_query->cores;
             int finished = cur_query->update(time);
-            if (finished) {
-                queueAllocate(cur_query);
-                processor.erase(query_p);
+            used_cores += cur_query->cores;
+            if (finished == 0) {
+                updateTimeC(cur_query->getTimeC());
+                ++query_p;
                 continue;
             }
+            if (finished == -1) {
+                queueAllocate(cur_query);
+            }
+            query_p = processor.erase(query_p);
         }
         for (auto query_p = processor.begin(); query_p != processor.end(); ++query_p) {
-            if (used_cores < cores) {
-                while (compare_func(*queue.begin(), *query_p)) {
-                    std::shared_ptr<Query> cur_query = *queue.begin();
-                    used_cores += cur_query->allocate(cores - used_cores);
-                    processor.insert(cur_query);
+            while (used_cores < cores && queue.size() > 0 && compare_func(*queue.begin(), *query_p)) {
+                std::shared_ptr<Query> cur_query = *queue.begin();
+                int cur_used_cores = cur_query->allocate(cores - used_cores);
+                if (cur_used_cores > 0) {
+                    used_cores += cur_used_cores;
                     updateTimeC(cur_query->getTimeC());
+                    processor.insert(cur_query);
                     queue.erase(queue.begin());
                 }
-                (*query_p)->allocate(cores - used_cores);
-            } else {
-                break;
             }
+            used_cores += (*query_p)->allocate(cores - used_cores);
+        }
+        if (used_cores < cores && queue.size() > 0) {
+            queueToProc();
         }
     }
 }
 
 
+int Simulation::queueToProc() {
+    for (auto query_p = queue.begin(); query_p != queue.end();) {
+        if (used_cores == cores) {
+            break;
+        }
+        int cur_used_cores = (*query_p)->allocate(cores - used_cores);
+        if (cur_used_cores > 0) {
+            used_cores += cur_used_cores;
+            updateTimeC((*query_p)->getTimeC());
+            processor.insert(*query_p);
+            query_p = queue.erase(query_p);
+        } else {
+            ++query_p;
+        }
+    }
+    return 1;
+}
 
 void Simulation::updateTimeC(double time_query_c) {
     time_c = (time_query_c < time_c) ? time_query_c : time_c;
@@ -159,7 +190,6 @@ void Simulation::updateTimeC(double time_query_c) {
 
 
 int Simulation::queueAllocate(std::shared_ptr<Query> query) {
-    used_cores += query->cores;
     queue.insert(query);
     return 1;
 }
@@ -170,12 +200,18 @@ void Simulation::output() {
     std::cout << "time: " << time << ", time_a: " << time_a << ", time_c: " << time_c << ", used_cores: " << used_cores << std::endl;
 
     std::cout << "processor:" << std::endl;
+    int idx = 0;
     for (std::shared_ptr<Query> query : processor) {
+        std::cout << "query_" << idx << std::endl;
         query->printQuery();
+        idx++;
     }
     std::cout << "queue:" << std::endl;
+    idx = 0;
     for (std::shared_ptr<Query> query : queue) {
+        std::cout << "query_" << idx << std::endl;
         query->printQuery();
+        idx++;
     }
     std::cout << getNJobs() << " " << jobs_time << std::endl;
 }

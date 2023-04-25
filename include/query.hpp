@@ -19,19 +19,23 @@ struct Query {
     
     // return how many cores used
     int allocate(int n_cores) {
-        int used_cores = getCurBlock()->allocate(n_cores);
-        cores += used_cores;
+        int used_cores = getCurBlock()->allocate(n_cores, &cores);
         return used_cores;
     }
 
     
-    // return 1 if Block finishes (can be preempted)
+    // return -1 if the whole Block finishes (can be preempted)
+    // return 1 if the whole Query finishes (can be deleted)
     int update(double time) {
-        double cur_size_dec = getCurBlock()->update(time);
-        size -= cur_size_dec;
-        if (std::abs(getCurBlock()->size) <= 1e-7f) {
-            blocks.erase(blocks.begin());
-            return 1;
+        int finished = getCurBlock()->update(time, &size, &cores);
+        if (finished) {
+            if (getCurBlock()->waiting_phases.size() == 0) {
+                finishBlock();
+            }
+            if (blocks.size() == 0) {
+                return 1;
+            }
+            return -1;
         }
         return 0;
     }
@@ -45,9 +49,10 @@ struct Query {
     }
 
     void printQuery() {
-        std::cout << "n_cores: " << cores << ", size: " << size << ", blocks: ";
-        for (Block block : blocks) {
-            block.printBlock();
+        std::cout << "n_cores: " << cores << ", size: " << size << std::endl;
+        for (int idx = 0; idx < blocks.size(); idx++) {
+            std::cout << "block_" << idx << ": " << std::endl;
+            blocks[idx].printBlock();
         }
         std::cout << std::endl;
     }

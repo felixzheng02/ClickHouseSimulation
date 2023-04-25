@@ -8,19 +8,26 @@ struct Phase {
     int cores = 0;
     double size; // remaining processing time given one CPU core
    
-    // return decremented size
-    double update(double time) {
+    // return 1 if finished running
+    int update(double time, double *query_size, int *query_cores) {
         double size_dec = time * cores;
         size -= size_dec;
-        return size_dec;
+        *query_size -= size_dec;
+        if (std::abs(size) <= 1e-7f) {
+            *query_cores -= cores;
+            cores = 0;
+            return 1;
+        }
+        return 0;
     }
 
     double getTimeC() {
         return size/cores;
     }
 
-    int allocate(int n_cores) {
+    int allocate(int n_cores, int *query_cores) {
         cores += n_cores;
+        *query_cores += n_cores;
         return 1;
     }
 
