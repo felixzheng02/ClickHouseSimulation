@@ -18,45 +18,42 @@ struct Block {
     }
     
     // return how many cores used
-    int allocate(int n_cores, int *query_cores) {
+    int allocate(int n_cores, int *query_cores, double *query_time_c) {
         int left_cores = n_cores;
         std::vector<int> allocated_phases;
         while (left_cores > 0 && (waiting_phases.size() != 0 || allocated_phases.size() != 0)) {
-            for (auto idx_p = waiting_phases.begin(); idx_p != waiting_phases.end();) {
-                if (left_cores > 0) {
-                    left_cores = allocatePhase(idx_p, left_cores, query_cores, &waiting_phases, &allocated_phases, &running_phases);
-                } else {
-                    break;
-                }
-            }
-            left_cores = allocateAlloc(left_cores, query_cores, &allocated_phases, &running_phases);
+            left_cores = allocatePhase(left_cores, query_cores, query_time_c, &waiting_phases, &allocated_phases, &running_phases);
+            left_cores = allocateAlloc(left_cores, query_cores, query_time_c,  &allocated_phases, &running_phases);
         }
         running_phases.insert(running_phases.end(), allocated_phases.begin(), allocated_phases.end());
         return n_cores - left_cores;
     }
     
 
-    int allocatePhase(std::vector<int>::iterator idx_p, int n_cores, int *query_cores, std::vector<int> *low, std::vector<int> *mid, std::vector<int> *up) {
+    int allocatePhase(int n_cores, int *query_cores, double *query_time_c, std::vector<int> *low, std::vector<int> *mid, std::vector<int> *up) {
+        
+        for (auto idx_p = low->begin(); idx_p != low->end();) {
+            if (n_cores == 0) return n_cores;
+            Phase *phase = &phases[(*low)[*idx_p]];
 
-        Phase *phase = &phases[(*low)[*idx_p]];
+            std::random_device rd; // obtain a random number from hardware
+            std::mt19937 gen(rd()); // seed the generator
+            std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase->multiprogramming - phase->cores));
+            int cores = distr_cores(gen);
 
-        std::random_device rd; // obtain a random number from hardware
-        std::mt19937 gen(rd()); // seed the generator
-        std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase->multiprogramming - phase->cores));
-        int cores = distr_cores(gen);
-
-        phase->allocate(cores, query_cores); 
-        n_cores -= cores;
-        if (phase->cores == phase->multiprogramming) {
-            up->push_back((*low)[*idx_p]);
-        } else {
-            mid->push_back((*low)[*idx_p]);
+            phase->allocate(cores, query_cores, query_time_c); 
+            n_cores -= cores;
+            if (phase->cores == phase->multiprogramming) {
+                up->push_back((*low)[*idx_p]);
+            } else {
+                mid->push_back((*low)[*idx_p]);
+            }
+            idx_p = low->erase(idx_p);
         }
-        idx_p = low->erase(idx_p);
         return n_cores;
     }
 
-    int allocateAlloc(int n_cores, int *query_cores, std::vector<int> *low, std::vector<int> *up) {
+    int allocateAlloc(int n_cores, int *query_cores, double *query_time_c, std::vector<int> *low, std::vector<int> *up) {
         
         std::vector<int> tmp_idx;
         for (auto idx_p = low->begin(); idx_p != low->end();) {
@@ -68,7 +65,7 @@ struct Block {
             std::uniform_int_distribution<> distr_cores(1, std::min(n_cores, phase->multiprogramming - phase->cores));
             int cores = distr_cores(gen);
 
-            phase->allocate(cores, query_cores); 
+            phase->allocate(cores, query_cores, query_time_c); 
             n_cores -= cores;
             if (phase->cores == phase->multiprogramming) {
                 up->push_back((*low)[*idx_p]);
@@ -82,10 +79,10 @@ struct Block {
     }
 
     // return 1 if all current running Phases are finished (can be preempted)
-    int update(double time, double *query_size, int *query_cores) {
+    int update(double time, double *query_size, int *query_cores, double *query_time_c) {
         for (int idx = 0; idx < running_phases.size();) {
             Phase *cur_phase = &phases[running_phases[idx]];
-            int finished = cur_phase->update(time, query_size, query_cores); 
+            int finished = cur_phase->update(time, query_size, query_cores, query_time_c); 
             if (finished) {
                 running_phases.erase(running_phases.begin()+idx);
             } else {
@@ -96,6 +93,23 @@ struct Block {
             return 1;
         }
         return 0; 
+    }
+
+    int updateRR(double time, double *query_size) {
+        for (auto phase_p = phases.begin(); phase_p != phases.end();) {
+            Phase *cur_phase = &(*phase_p);
+            int finished = cur_phase->updateRR(time, query_size); 
+            if (finished) {
+                phase_p = phases.erase(phase_p);
+            } else {
+                ++phase_p;
+            }
+        }
+        if (phases.size() == 0) {
+            return 1;
+        }
+        return 0; 
+
     }
 
     double getTimeC() { // needs modification to improve efficiency

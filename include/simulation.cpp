@@ -9,10 +9,6 @@ Simulation::Simulation(int cores, Policy policy, CompareFunc compare_func, Query
 
 }
 
-Simulation::~Simulation() {
-    // delete this->queue;
-}
-
 double Simulation::getTime() {
     return time;
 }
@@ -61,11 +57,11 @@ int Simulation::run() {
 
     double time_n = std::min(time_a, time_c); // find time_next
     
-    std::cout << "############################################" << std::endl;
+    //std::cout << "############################################" << std::endl;
                                                   
     if (time_n == time_a) { // if time_next is time_arrival
         
-        std::cout << "arrival occurs; ";
+        //std::cout << "arrival occurs; ";
         
         Simulation::procUpdate(time_n); // time_c update here
         
@@ -79,7 +75,7 @@ int Simulation::run() {
 
     } else { // if time_n == time_c
         
-        std::cout << "phase finishes; ";
+        //std::cout << "phase finishes; ";
 
         time_a -= time_n;
 
@@ -91,9 +87,9 @@ int Simulation::run() {
 
     jobs_time += getNJobs() * time_n;
 
-    Simulation::output();
+    //Simulation::output();
     
-    std::cout << std::endl;
+    //std::cout << std::endl;
     
     return 1;
     
@@ -242,4 +238,80 @@ void Simulation::printProcessor() {
     for (auto query_p = processor.begin(); query_p != processor.end(); ++query_p) {
         (*query_p)->printQuery();
     }
+}
+
+
+int SimulationRR::run() {
+    
+    double time_n = std::min(time_a, time_c); // find time_next
+    
+    std::cout << "############################################" << std::endl;
+                                                  
+    if (time_n == time_a) { // if time_next is time_arrival
+        
+        std::cout << "arrival occurs; ";
+        
+        SimulationRR::procUpdate(time_n); // time_c update here
+        
+        std::shared_ptr<Query> query = query_generator.nextP(time_a);
+
+        processor_RR.push_back(query); 
+
+        n_phases += query->getCurBlock()->phases.size();
+
+        updateTimeC(query->getTimeCRR()*n_phases);
+       
+        time_a = query_generator.getArrivalDist()->sample(); // generate new time_a
+
+        time += time_n;
+
+    } else { // if time_n == time_c
+        
+        std::cout << "phase finishes; ";
+
+        time_a -= time_n;
+
+        SimulationRR::procUpdate(time_n); // time_c update here
+        
+        time += time_n;
+
+    }
+
+    jobs_time += getNJobs() * time_n;
+
+    SimulationRR::output();
+    
+    std::cout << std::endl;
+    
+
+    return 1;
+}
+
+int SimulationRR::procUpdate(double time) {
+    for (auto query_p = processor_RR.begin(); query_p != processor_RR.end();) {
+        std::shared_ptr<Query> cur_query = *query_p;
+        n_phases -= cur_query->getCurBlock()->phases.size();
+        int finished = cur_query->updateRR(time/n_phases);
+        if (finished) {
+            query_p = processor_RR.erase(query_p);
+        }
+        n_phases += cur_query->getCurBlock()->phases.size();
+        updateTimeC(cur_query->getTimeCRR()*n_phases);
+        ++query_p;
+    }
+    return 1;
+}
+
+int SimulationRR::output() {
+    std::cout << "time: " << time << ", time_a: " << time_a << ", time_c: " << time_c << std::endl;
+
+    std::cout << "processor_RR:" << std::endl;
+    int idx = 0;
+    for (std::shared_ptr<Query> query : processor_RR) {
+        std::cout << "query_" << idx << std::endl;
+        query->printQuery();
+        idx++;
+    }
+    
+    return 1;
 }

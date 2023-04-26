@@ -18,7 +18,7 @@ std::string getText(Policy policy) {
 int main() {
 
     int n_cores = 64;
-    std::vector<Policy> policies = {NEW_1};
+    std::vector<Policy> policies = {SRPT_query, NEW_1};
     double arrival_lambda = 1;
     
     for (Policy policy : policies) {
@@ -36,7 +36,7 @@ int main() {
 
         auto compare_func = (policy == SRPT_query) ? compare_func_size : (policy == NEW_1) ? compare_func_size : compare_func_arrival;
 
-        for (double size=15; size<=20; size+=5) {
+        for (double size=1; size<=50; size+=1) {
 
             ExponentialDistribution arrival_dist(arrival_lambda);
             ParetoDistribution phase_size_dist(1.5, size);

@@ -29,7 +29,7 @@ std::string getText(Policy policy);
 
 
 class Simulation {
-    private:
+    protected:
         typedef bool (*CompareFunc)(std::shared_ptr<Query> query_1, std::shared_ptr<Query> query_2);
         CompareFunc compare_func;
         int cores = 8; // total cores available
@@ -42,35 +42,6 @@ class Simulation {
         Policy policy;
         std::multiset<std::shared_ptr<Query>, CompareFunc> processor;
         double jobs_time = 0; // keep track of average number of jobs in the system * global time
-
-    public:
-
-        Simulation(int cores, Policy policy, CompareFunc compare, QueryGenerator query_generator); 
-
-        ~Simulation();
-
-        double getTime();
-
-        double getTimeA();
-
-        double getTimeC();
-
-        int getNJobs();
-
-        std::multiset<std::shared_ptr<Query>, CompareFunc> getQueue();
-
-        std::multiset<std::shared_ptr<Query>, CompareFunc> getProcessor();
-
-        double getJobsTime();
-
-        double getMeanJobs();
-        
-        // initialize the simulation
-        // set time_a
-        void initialize();
-
-         // run the simulation till next time point
-        int run(); 
         
         // attempt to allocate the query to the processor
         // if cannot do that, allocate to the queue
@@ -104,6 +75,33 @@ class Simulation {
         int queueGet();
 
         int queueToProc();
+
+    public:
+
+        Simulation(int cores, Policy policy, CompareFunc compare, QueryGenerator query_generator); 
+
+        double getTime();
+
+        double getTimeA();
+
+        double getTimeC();
+
+        int getNJobs();
+
+        std::multiset<std::shared_ptr<Query>, CompareFunc> getQueue();
+
+        std::multiset<std::shared_ptr<Query>, CompareFunc> getProcessor();
+
+        double getJobsTime();
+
+        double getMeanJobs();
+        
+        // initialize the simulation
+        // set time_a
+        void initialize();
+
+         // run the simulation till next time point
+        int run(); 
         
         // produce information
         void output();
@@ -111,5 +109,21 @@ class Simulation {
         void printProcessor();
 };
 
+class SimulationRR : public Simulation {
+    protected:
+        int n_phases = 0;
+        std::vector<std::shared_ptr<Query>> processor_RR;
+
+    public:
+        
+        SimulationRR(int cores, CompareFunc compare_func, QueryGenerator query_generator) : Simulation(cores, RR, compare_func, query_generator) {
+        }
+
+        int run();
+
+        int procUpdate(double time);
+
+        int output();
+};
 
 #endif
