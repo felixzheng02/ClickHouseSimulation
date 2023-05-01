@@ -7,7 +7,9 @@ struct Phase {
     int multiprogramming = 1; // 1: inelastic; more than 1: elastic
     int cores = 0;
     double size; // remaining processing time given one CPU core
-   
+  
+    Phase(int multiprogramming, double size) : multiprogramming(multiprogramming), size(size) {
+    }
     // return 1 if finished running
     int update(double time, double *query_size, int *query_cores, double *query_time_c) {
         double size_dec = time * cores;

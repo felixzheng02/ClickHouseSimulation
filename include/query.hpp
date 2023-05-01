@@ -6,26 +6,36 @@
 #include <iostream>
 
 struct Query {
-    std::vector <Block> blocks;
+    std::vector<Block> blocks;
+    std::vector<int> running_blocks;
+    std::vector<int> ready_blocks;
+    std::vector<int> waiting_blocks;
     double arrival; // arrival time
     double size; // remaining processing time
     int cores = 0; // number of cores it is running on
     double time_c = INFINITY;
 
-    Query(std::vector<Block> blocks, double arrival, double size) : blocks(blocks), arrival(arrival), size(size), cores(0) {}
-    
-    Block *getCurBlock() {
-        return &blocks.front();
+    Query(std::vector<Block> blocks, double arrival, double size) : blocks(blocks), arrival(arrival), size(size), cores(0) {
+        for (int idx = 0; idx < blocks.size(); idx++) {
+            waiting_blocks.push_back(idx);
+        }
     }
     
     // return how many cores used
     int allocate(int n_cores) {
-        int used_cores = getCurBlock()->allocate(n_cores, &cores, &time_c);
+        int used_cores = 0;
+        while (used_cores < n_cores) {
+            std::random_device rd; // obtain a random number from hardware
+            std::mt19937 gen(rd()); // seed the generator
+            std::uniform_int_distribution<> distr_block(0, ready_blocks.size()-1);
+            int index = ready_blocks[distr_block(gen)];
+            used_cores += (&blocks[index])->allocate(n_cores, &cores, &time_c);
+        }
         return used_cores;
     }
 
     
-    // return -1 if the whole Block finishes (can be preempted)
+    // return -1 if the all running Blocks finishes (can be preempted)
     // return 1 if the whole Query finishes (can be deleted)
     int update(double time) {
         time_c = INFINITY;
