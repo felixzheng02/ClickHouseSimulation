@@ -92,19 +92,16 @@ class PhaseGenerator {
     public:
     PhaseGenerator(Distribution<double> *distribution);
     Phase next(int multiprogramming);
-    Phase next(int multiprogramming, double size);
 };
 
 class QueryGenerator {
     Distribution<double> *arrival_dist;
     PhaseGenerator phaseGenerator;
-    int multiprogramming = 16;
     public:
-	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist, int multiprogramming);
+	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist);
     std::shared_ptr<Query> nextP(); 
     std::shared_ptr<Query> nextP(double arrival_time);  
     Distribution<double> *getArrivalDist();
-    double generatePhases1(std::vector<Block> *blocks);
 };
 
 //class MemoryBoundGenerator : public Generator {

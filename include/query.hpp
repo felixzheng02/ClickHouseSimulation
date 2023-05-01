@@ -1,86 +1,59 @@
 #ifndef QUERY_H
 #define QUERY_H
 
-#include "block.hpp"
+#include "phase.hpp"
 #include <vector>
 #include <iostream>
 
 struct Query {
-    std::vector <Block> blocks;
+    std::vector <Phase> phases;
     double arrival; // arrival time
     double size; // remaining processing time
-    int cores = 0; // number of cores it is running on
-    double time_c = INFINITY;
+    double memory = 0; // amount of memory required
+    int n_cores = 0; // number of cores it is running on
 
-    Query(std::vector<Block> blocks, double arrival, double size) : blocks(blocks), arrival(arrival), size(size), cores(0) {}
+    Query(std::vector<Phase> phases_, double arrival_, double size_, double memory_, int n_cores_) : phases(phases_), arrival(arrival_), size(size_), memory(memory_), n_cores(n_cores_) {}
     
-    Block *getCurBlock() {
-        return &blocks.front();
-    }
-    
-    // return how many cores used
-    int allocate(int n_cores) {
-        int used_cores = getCurBlock()->allocate(n_cores, &cores, &time_c);
-        return used_cores;
+    Phase getNextPhase() {
+        return phases.front();
     }
 
-    
-    // return -1 if the whole Block finishes (can be preempted)
-    // return 1 if the whole Query finishes (can be deleted)
-    int update(double time) {
-        time_c = INFINITY;
-        int finished = getCurBlock()->update(time, &size, &cores, &time_c);
-        if (finished) {
-            if (blocks.size() != 0 && getCurBlock()->waiting_phases.size() == 0) {
-                finishBlock();
-            }
-            if (blocks.size() == 0) {
-                return 1;
-            }
-            return -1;
+    double getCurSize() {
+        return phases.front().size/n_cores;
+    }
+
+    void finishPhase() {
+        phases.erase(phases.begin());
+    }
+
+    int updateSize(double time) {
+        time = time * n_cores;
+        phases.front().size -= time;
+        size -= time;
+        
+        if (std::abs(phases.front().size) <= 1e-7f) {
+            finishPhase();
+            return 1;
+        }
+        if (phases.front().size < 0) {
+            printQuery();
+            throw "invalid phase size.";
+        } 
+            return 0;
+    }
+
+    int setNCores(int n) {
+        if (n <= getNextPhase().multiprogramming) {
+            n_cores = n;
+            return 1;
         }
         return 0;
-    }
-    
-    // return 1 if Query finishes, 0 otherwise
-    int updateRR(double time) {
-        int finished = getCurBlock()->updateRR(time, &size);
-        if (finished) {
-            if (getCurBlock()->waiting_phases.size() == 0) {
-                finishBlock();
-            }
-            if (blocks.size() == 0) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-
-    double getTimeC() {
-        return time_c;
-    }
-
-    double getTimeCRR() {
-        double result = INFINITY;
-        for (auto block_p = blocks.begin(); block_p != blocks.end(); ++block_p) {
-            for (Phase phase : (*block_p).phases) {
-                if (phase.size < result) {
-                    result = phase.size;
-                }
-            }
-        }
-        return result;
-    }
-
-    void finishBlock() {
-        blocks.erase(blocks.begin());
     }
 
     void printQuery() {
-        std::cout << "n_cores: " << cores << ", size: " << size << std::endl;
-        for (int idx = 0; idx < blocks.size(); idx++) {
-            std::cout << "block_" << idx << ": " << std::endl;
-            blocks[idx].printBlock();
+        std::cout << "n_cores: " << n_cores << ", size: " << size << ", phases: ";
+        for (Phase phase : phases) {
+            std::cout << "{" << phase.multiprogramming << ", " << phase.size << "}, ";
         }
         std::cout << std::endl;
     }

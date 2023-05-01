@@ -6,16 +6,11 @@ PhaseGenerator::PhaseGenerator(Distribution<double> *distribution) {
 }
 
 Phase PhaseGenerator::next(int multiprogramming) {
-    return {multiprogramming, 0, dist->sample()};
+    return {multiprogramming, dist->sample()};
 }
 
-
-Phase PhaseGenerator::next(int multiprogramming, double size) {
-    return {multiprogramming, 0, size};
-}
-
-
-QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distribution<double> *phase_size_distribution, int multiprogramming) : arrival_dist(arrival_distribution), phaseGenerator(phase_size_distribution), multiprogramming(multiprogramming) {
+QueryGenerator::QueryGenerator(Distribution<double> *arrival_distribution, Distribution<double> *phase_size_distribution) : phaseGenerator(phase_size_distribution) {
+	arrival_dist = arrival_distribution; 
 }
 
 std::shared_ptr<Query> QueryGenerator::nextP() {
@@ -29,30 +24,16 @@ std::shared_ptr<Query> QueryGenerator::nextP(double arrival_time) {
     std::uniform_int_distribution<> distr(25, 63); // define the range
     */
 
-    std::vector<Block> blocks;
-    double size = generatePhases1(&blocks);
-    return std::make_shared<Query>(blocks, arrival_time, size);
+    std::vector<Phase> phases;
+    double size = 0;
+    phases.push_back(phaseGenerator.next(64));
+    phases.push_back(phaseGenerator.next(1));
+    for (int i=0; i<phases.size(); i++) {
+        size += phases[i].size;
+    }
+    return std::make_shared<Query>(phases, arrival_time, size, 0, 0);
 }
 
-double QueryGenerator::generatePhases1(std::vector<Block> *blocks) {
-    double size = 0;
-    std::vector<Phase> phases_1, phases_2;
-    Phase phase = phaseGenerator.next(multiprogramming);
-    phases_1.push_back(phase);
-    size += phase.size;
-    phase = phaseGenerator.next(1);
-    phases_1.push_back(phase);
-    size += phase.size;
-    Block block { phases_1 };
-    blocks->push_back(block);
-    phase = phaseGenerator.next(1);
-    phases_2.push_back(phase);
-    size += phase.size;
-    Block block_2 { phases_2 };
-    blocks->push_back(block_2);
-    
-    return size;
-}
 
 
 Distribution<double> *QueryGenerator::getArrivalDist() {

@@ -20,8 +20,10 @@ NEW_1
 */
 
 enum Policy {
-    RR,
+    FCFS,
+    SJF,
     SRPT_query,
+    SRPT,
     NEW_1
 };
 
@@ -29,9 +31,8 @@ std::string getText(Policy policy);
 
 
 class Simulation {
-    protected:
+    private:
         typedef bool (*CompareFunc)(std::shared_ptr<Query> query_1, std::shared_ptr<Query> query_2);
-        CompareFunc compare_func;
         int cores = 8; // total cores available
         int used_cores = 0; // number of cores occupied
         double time = 0.0; // global time
@@ -42,43 +43,12 @@ class Simulation {
         Policy policy;
         std::multiset<std::shared_ptr<Query>, CompareFunc> processor;
         double jobs_time = 0; // keep track of average number of jobs in the system * global time
-        
-        // attempt to allocate the query to the processor
-        // if cannot do that, allocate to the queue
-        int allocate(std::shared_ptr<Query> query);
-
-        int deallocate(std::shared_ptr<Query> query);
-
-        // check if a query can be allocated in processor
-        // return number of cores that should be allocated
-        // return 0 if cannot be allocated
-        int check(std::shared_ptr<Query> query);
-
-        // insert Query * into processor
-        // update used_cores
-        // update time_c
-        int procAllocate(std::shared_ptr<Query> query);
-
-        // update each query's current phase's size
-        // if current phase finishes, start next phase
-        // update time_c
-        void procUpdate(double time);
-       
-        void updateTimeC(double time_query_c);
-
-        // insert Query * into queue
-        int queueAllocate(std::shared_ptr<Query> query);
-       
-        // allocate queries in the queue to the processor
-        // based on scheduling policy (currently FCFS)
-        // until processor's cores are all occupied
-        int queueGet();
-
-        int queueToProc();
 
     public:
 
         Simulation(int cores, Policy policy, CompareFunc compare, QueryGenerator query_generator); 
+
+        ~Simulation();
 
         double getTime();
 
@@ -103,27 +73,40 @@ class Simulation {
          // run the simulation till next time point
         int run(); 
         
+        // attempt to allocate the query to the processor
+        // if cannot do that, allocate to the queue
+        int allocate(std::shared_ptr<Query> query);
+
+        // check if a query can be allocated in processor
+        // return number of cores that should be allocated
+        // return 0 if cannot be allocated
+        int check(std::shared_ptr<Query> query);
+
+        // insert Query * into processor
+        // update used_cores
+        // update time_c
+        int procAllocate(std::shared_ptr<Query> query, int n_cores);
+
+        // update each query's current phase's size
+        // if current phase finishes, start next phase
+        // update time_c
+        void procUpdate(double time);
+       
+        void timeCUpdate();
+
+        // insert Query * into queue
+        int queueAllocate(std::shared_ptr<Query> query);
+       
+        // allocate queries in the queue to the processor
+        // based on scheduling policy (currently FCFS)
+        // until processor's cores are all occupied
+        int queueGet();
+        
         // produce information
         void output();
 
         void printProcessor();
 };
 
-class SimulationRR : public Simulation {
-    protected:
-        int n_phases = 0;
-        std::vector<std::shared_ptr<Query>> processor_RR;
-
-    public:
-        
-        SimulationRR(int cores, CompareFunc compare_func, QueryGenerator query_generator) : Simulation(cores, RR, compare_func, query_generator) {
-        }
-
-        int run();
-
-        int procUpdate(double time);
-
-        int output();
-};
 
 #endif
