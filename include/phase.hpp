@@ -2,6 +2,7 @@
 #define PHASE_H
 
 #include <iostream>
+#include "generation.hpp"
 
 struct Phase {
     int multiprogramming = 1; // 1: inelastic; more than 1: elastic
@@ -10,7 +11,7 @@ struct Phase {
   
     Phase(int multiprogramming, double size) : multiprogramming(multiprogramming), size(size) {
     }
-    // return 1 if finished running
+    // return 1 if Phase finishes
     int update(double time, double *query_size, int *query_cores, double *query_time_c) {
         double size_dec = time * cores;
         size -= size_dec;
@@ -29,7 +30,7 @@ struct Phase {
     int updateRR(double time, double *query_size) {
         size -= time;
         *query_size -= time;
-        if (std::abs(size) <= 1e-7f) {
+        if (std::abs(size) <= 1e-20f) {
             return 1;
         }
         return 0;
@@ -39,13 +40,18 @@ struct Phase {
         return size/cores;
     }
 
+    // return used cores
     int allocate(int n_cores, int *query_cores, double *query_time_c) {
-        cores += n_cores;
-        *query_cores += n_cores;
-        if (size/cores < *query_time_c) {
-            *query_time_c = size/cores;
+        int before_cores = cores;
+        cores = std::min(cores + n_cores, multiprogramming);
+        if (cores - before_cores > 0) {
+            *query_cores += (cores - before_cores);
+            if (size/cores < *query_time_c) {
+                *query_time_c = size/cores;
+            }
+            return cores - before_cores;
         }
-        return 1;
+        return 0;
     }
 
     int printPhase() {

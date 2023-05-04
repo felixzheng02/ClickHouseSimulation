@@ -8,25 +8,62 @@
 
 struct Block {
     std::vector<Phase> phases; // never change phases directly, use running_phases and waiting_phases
+    std::vector<int> full_phases;
     std::vector<int> running_phases;
     std::vector<int> waiting_phases;
+    std::vector<int> before_blocks;
+    std::vector<int> next_blocks;
+    UniformIntDistribution uniform_int_distribution;
 
-    Block(std::vector<Phase> phases) : phases(phases) {
+    Block(std::vector<Phase> phases, std::vector<int> before_blocks, std::vector<int> next_blocks) : phases(phases), before_blocks(before_blocks), next_blocks(next_blocks) {
         for (int idx = 0; idx < phases.size(); idx++) {
             waiting_phases.push_back(idx);
         }
     }
     
+    Block(std::vector<Phase> phases, std::vector<int> blocks, int before) : phases(phases) {
+        if (before) {
+            before_blocks = blocks;
+        } else {
+            next_blocks = blocks;
+        }
+        for (int idx = 0; idx < phases.size(); idx++) {
+            waiting_phases.push_back(idx);
+        }
+    }
+
     // return how many cores used
     int allocate(int n_cores, int *query_cores, double *query_time_c) {
-        int left_cores = n_cores;
-        std::vector<int> allocated_phases;
-        while (left_cores > 0 && (waiting_phases.size() != 0 || allocated_phases.size() != 0)) {
-            left_cores = allocatePhase(left_cores, query_cores, query_time_c, &waiting_phases, &allocated_phases, &running_phases);
-            left_cores = allocateAlloc(left_cores, query_cores, query_time_c,  &allocated_phases, &running_phases);
+        if (waiting_phases.size() + running_phases.size() == 0) return 0;
+
+        int index = uniform_int_distribution.sample(0, waiting_phases.size()+running_phases.size()-1);
+        int used_cores = 0;
+        Phase *cur_phase;
+        if (index < waiting_phases.size()) {
+            cur_phase = &phases[waiting_phases[index]];
+        } else {
+            cur_phase = &phases[running_phases[index-waiting_phases.size()]];
         }
-        running_phases.insert(running_phases.end(), allocated_phases.begin(), allocated_phases.end());
-        return n_cores - left_cores;
+        int cur_used_cores = cur_phase->allocate(1, query_cores, query_time_c); 
+        if (cur_used_cores > 0) {
+            if (index < waiting_phases.size()) {
+                    running_phases.push_back(waiting_phases[index]);
+                    waiting_phases.erase(waiting_phases.begin() + index);
+                }
+                used_cores += cur_used_cores;
+        } else {
+            if (index >= waiting_phases.size()) {
+                full_phases.push_back(running_phases[index-waiting_phases.size()]);
+                running_phases.erase(running_phases.begin()+index-waiting_phases.size());
+            }
+        }
+
+        return used_cores;
+    }
+
+    int deallocate() {
+
+        return 1;
     }
     
 
@@ -78,7 +115,8 @@ struct Block {
         return n_cores;
     }
 
-    // return 1 if all current running Phases are finished (can be preempted)
+    // return -1 if all current running Phases are finished
+    // return 1 if the Block finishes
     int update(double time, double *query_size, int *query_cores, double *query_time_c) {
         for (int idx = 0; idx < running_phases.size();) {
             Phase *cur_phase = &phases[running_phases[idx]];
@@ -89,8 +127,21 @@ struct Block {
                 idx++;
             }
         }
-        if (running_phases.size() == 0) {
-            return 1;
+        for (int idx = 0; idx < full_phases.size();) {
+            Phase *cur_phase = &phases[full_phases[idx]];
+            int finished = cur_phase->update(time, query_size, query_cores, query_time_c); 
+            if (finished) {
+                full_phases.erase(full_phases.begin()+idx);
+            } else {
+                idx++;
+            }
+        }
+
+        if (running_phases.size() == 0 && full_phases.size() == 0) {
+            if (waiting_phases.size() == 0) {
+                return 1;
+            }
+            return -1;
         }
         return 0; 
     }
@@ -118,17 +169,36 @@ struct Block {
             Phase cur_phase = phases[running_phases[idx]];
             time_c = (cur_phase.getTimeC() < time_c) ? cur_phase.getTimeC() : time_c;
         }
+        for (int idx = 0; idx < full_phases.size(); idx++) {
+            Phase cur_phase = phases[full_phases[idx]];
+            time_c = (cur_phase.getTimeC() < time_c) ? cur_phase.getTimeC() : time_c;
+        }
         return time_c;
     }
 
     int checkFinished() {
-        if (running_phases.size() == 0 && waiting_phases.size() == 0) {
+        if (full_phases.size() == 0 && running_phases.size() == 0 && waiting_phases.size() == 0) {
             return 1;
         }
         return 0;
     }
 
     int printBlock() {
+        std::cout << "before_blocks: ";
+        for (int idx : before_blocks) {
+            std::cout << idx << ", ";
+        }
+        std::cout << "next_blocks: ";
+        for (int idx : next_blocks) {
+            std::cout << idx << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "full_phases: {" << std::endl;
+        for (int idx : full_phases) {
+            phases[idx].printPhase();
+            std::cout << std::endl;
+        }
+        std::cout << "}" << std::endl;
         std::cout << "running_phases: {" << std::endl;
         for (int idx : running_phases) {
             phases[idx].printPhase();
@@ -145,5 +215,8 @@ struct Block {
     }
 
 };
+
+
+
 
 #endif

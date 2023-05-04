@@ -6,7 +6,6 @@
 #include <cmath>
 #include <array>
 #include <memory>
-#include "query.hpp"
 
 template <class T>
 class Distribution {
@@ -87,25 +86,18 @@ class ZipfianDistribution : public Distribution<int> {
 };
 
 
-class PhaseGenerator {
-    Distribution<double> *dist;
+class UniformIntDistribution {
+    private:        
+        std::mt19937 eng{std::random_device{}()};
+
     public:
-    PhaseGenerator(Distribution<double> *distribution);
-    Phase next(int multiprogramming);
-    Phase next(int multiprogramming, double size);
+        UniformIntDistribution() = default;
+        UniformIntDistribution(std::mt19937::result_type seed) : eng(seed) {}
+        int sample(int min, int max) {
+            return std::uniform_int_distribution<int>{min, max}(eng);
+        }
 };
 
-class QueryGenerator {
-    Distribution<double> *arrival_dist;
-    PhaseGenerator phaseGenerator;
-    int multiprogramming = 16;
-    public:
-	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist, int multiprogramming);
-    std::shared_ptr<Query> nextP(); 
-    std::shared_ptr<Query> nextP(double arrival_time);  
-    Distribution<double> *getArrivalDist();
-    double generatePhases1(std::vector<Block> *blocks);
-};
 
 //class MemoryBoundGenerator : public Generator {
 //	Distribution<double> *arrival_dist, *size_dist;

@@ -6,6 +6,7 @@
 #include <vector>
 #include <set>
 #include "generation.hpp"
+#include "query_generation.hpp"
 
 
 /*
@@ -62,7 +63,7 @@ class Simulation {
         // update each query's current phase's size
         // if current phase finishes, start next phase
         // update time_c
-        void procUpdate(double time);
+        void procUpdate(double time, int* n);
        
         void updateTimeC(double time_query_c);
 
@@ -75,6 +76,7 @@ class Simulation {
         int queueGet();
 
         int queueToProc();
+
 
     public:
 
@@ -101,29 +103,13 @@ class Simulation {
         void initialize();
 
          // run the simulation till next time point
-        int run(); 
+        int run(int *n); 
+        
         
         // produce information
         void output();
 
         void printProcessor();
-};
-
-class SimulationRR : public Simulation {
-    protected:
-        int n_phases = 0;
-        std::vector<std::shared_ptr<Query>> processor_RR;
-
-    public:
-        
-        SimulationRR(int cores, CompareFunc compare_func, QueryGenerator query_generator) : Simulation(cores, RR, compare_func, query_generator) {
-        }
-
-        int run();
-
-        int procUpdate(double time);
-
-        int output();
 };
 
 #endif
