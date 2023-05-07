@@ -21,6 +21,7 @@ NEW_1
 */
 
 enum Policy {
+    FCFS,
     RR,
     SRPT_query,
     NEW_1
@@ -42,7 +43,10 @@ class Simulation {
         std::multiset<std::shared_ptr<Query>, CompareFunc> queue;
         Policy policy;
         std::multiset<std::shared_ptr<Query>, CompareFunc> processor;
+        std::vector<std::shared_ptr<Query>> processor_RR;
         double jobs_time = 0; // keep track of average number of jobs in the system * global time
+        double expected_slowdown = 0;
+        UniformIntDistribution uniform_int_distribution;
         
         // attempt to allocate the query to the processor
         // if cannot do that, allocate to the queue
@@ -89,6 +93,8 @@ class Simulation {
         double getTimeC();
 
         int getNJobs();
+
+        double getExpectedSlowdown();
 
         std::multiset<std::shared_ptr<Query>, CompareFunc> getQueue();
 

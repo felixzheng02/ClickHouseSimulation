@@ -73,7 +73,20 @@ struct Query {
     }
 
     int deallocate() {
-    
+        for (auto idx_p = full_blocks.begin(); idx_p != full_blocks.end();) {
+            Block *block = &blocks[*idx_p];
+            block->deallocate();
+            ready_blocks.push_back(*idx_p);
+            idx_p = full_blocks.erase(idx_p);
+        }
+        for (auto idx_p = running_blocks.begin(); idx_p != running_blocks.end();) {
+            Block *block = &blocks[*idx_p];
+            block->deallocate();
+            ready_blocks.push_back(*idx_p);
+            idx_p = running_blocks.erase(idx_p);
+        }
+        cores = 0;
+        time_c = INFINITY;
         return 1;
     }
 
@@ -95,15 +108,17 @@ struct Query {
     }
 
     int updateBlocks(std::vector<int> *block_lst, double time, double *size, int *cores, double *time_c) {
-        for (int idx = 0; idx < block_lst->size(); idx++) {
-            int index = (*block_lst)[idx];
+        for (auto idx_p = block_lst->begin(); idx_p != block_lst->end();) {
+            int index = *idx_p;
             Block *cur_block = &blocks[index];
             int finished = cur_block->update(time, size, cores, time_c);
             if (finished == 1) {
                 // cur_block finishes 
-                block_lst->erase(block_lst->begin()+idx);
+                idx_p = block_lst->erase(idx_p);
                 finished_blocks.push_back(index);
                 findReady();
+            } else {
+                ++idx_p;
             }
         }
         return 1;
@@ -147,18 +162,6 @@ struct Query {
         return time_c;
     }
 
-    double getTimeCRR() {
-        double result = INFINITY;
-        for (auto block_p = blocks.begin(); block_p != blocks.end(); ++block_p) {
-            for (Phase phase : (*block_p).phases) {
-                if (phase.size < result) {
-                    result = phase.size;
-                }
-            }
-        }
-        return result;
-    }
-
 
     void printQuery(int details = 0) {
         if (details == 0) {
@@ -193,6 +196,9 @@ struct Query {
             finished = update(time_c);
             left_cores -= cores;
             left_cores -= allocate(left_cores);
+            if ((time_c == INFINITY || time_c == -INFINITY) && finished == 0) {
+                std::cout << "";
+            }
             // if (getTimeC() == INFINITY) throw std::string("exception ! error");
         }
         return time;

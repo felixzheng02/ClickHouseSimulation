@@ -14,6 +14,7 @@ class QueryGenerator {
     Distribution<double> *arrival_dist;
     PhaseGenerator phaseGenerator;
     int multiprogramming = 16;
+    UniformIntDistribution uniform_int_distribution;
     public:
 	QueryGenerator(Distribution<double> *arrival_dist, Distribution<double> *phase_size_dist, int multiprogramming);
     QueryGenerator();
@@ -21,6 +22,7 @@ class QueryGenerator {
     std::shared_ptr<Query> nextP(); 
     std::shared_ptr<Query> nextP(double arrival_time);  
     Distribution<double> *getArrivalDist();
+    std::vector<Block> generatePhases0();
     std::vector<Block> generatePhases1();
 };
 

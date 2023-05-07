@@ -62,7 +62,18 @@ struct Block {
     }
 
     int deallocate() {
-
+        for (auto idx_p = full_phases.begin(); idx_p != full_phases.end();) {
+            Phase *cur_phase = &phases[*idx_p];
+            cur_phase->deallocate();
+            waiting_phases.push_back(*idx_p);
+            idx_p = full_phases.erase(idx_p);
+        }
+        for (auto idx_p = running_phases.begin(); idx_p != running_phases.end();) {
+            Phase *cur_phase = &phases[*idx_p];
+            cur_phase->deallocate();
+            waiting_phases.push_back(*idx_p);
+            idx_p = running_phases.erase(idx_p);
+        }
         return 1;
     }
     
@@ -118,22 +129,22 @@ struct Block {
     // return -1 if all current running Phases are finished
     // return 1 if the Block finishes
     int update(double time, double *query_size, int *query_cores, double *query_time_c) {
-        for (int idx = 0; idx < running_phases.size();) {
-            Phase *cur_phase = &phases[running_phases[idx]];
+        for (auto idx_p = running_phases.begin(); idx_p != running_phases.end();) {
+            Phase *cur_phase = &phases[*idx_p];
             int finished = cur_phase->update(time, query_size, query_cores, query_time_c); 
             if (finished) {
-                running_phases.erase(running_phases.begin()+idx);
+                idx_p = running_phases.erase(idx_p);
             } else {
-                idx++;
+                ++idx_p;
             }
         }
-        for (int idx = 0; idx < full_phases.size();) {
-            Phase *cur_phase = &phases[full_phases[idx]];
+        for (auto idx_p = full_phases.begin(); idx_p != full_phases.end();) {
+            Phase *cur_phase = &phases[*idx_p];
             int finished = cur_phase->update(time, query_size, query_cores, query_time_c); 
             if (finished) {
-                full_phases.erase(full_phases.begin()+idx);
+                idx_p = full_phases.erase(idx_p);
             } else {
-                idx++;
+                ++idx_p;
             }
         }
 
@@ -146,31 +157,15 @@ struct Block {
         return 0; 
     }
 
-    int updateRR(double time, double *query_size) {
-        for (auto phase_p = phases.begin(); phase_p != phases.end();) {
-            Phase *cur_phase = &(*phase_p);
-            int finished = cur_phase->updateRR(time, query_size); 
-            if (finished) {
-                phase_p = phases.erase(phase_p);
-            } else {
-                ++phase_p;
-            }
-        }
-        if (phases.size() == 0) {
-            return 1;
-        }
-        return 0; 
-
-    }
 
     double getTimeC() { // needs modification to improve efficiency
         double time_c = INFINITY;
-        for (int idx = 0; idx < running_phases.size(); idx++) {
-            Phase cur_phase = phases[running_phases[idx]];
+        for (auto idx_p = running_phases.begin(); idx_p != running_phases.end();) {
+            Phase cur_phase = phases[*idx_p];
             time_c = (cur_phase.getTimeC() < time_c) ? cur_phase.getTimeC() : time_c;
         }
-        for (int idx = 0; idx < full_phases.size(); idx++) {
-            Phase cur_phase = phases[full_phases[idx]];
+        for (auto idx_p = full_phases.begin(); idx_p != full_phases.end();) {
+            Phase cur_phase = phases[*idx_p];
             time_c = (cur_phase.getTimeC() < time_c) ? cur_phase.getTimeC() : time_c;
         }
         return time_c;

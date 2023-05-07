@@ -25,7 +25,14 @@ double Simulation::getTimeA() {
 
 
 int Simulation::getNJobs() {
+    if (policy == RR) {
+        return processor_RR.size();
+    }
     return queue.size() + processor.size();
+}
+
+double Simulation::getExpectedSlowdown() {
+    return expected_slowdown;
 }
 
 
@@ -84,8 +91,10 @@ int Simulation::run(int *n) {
         time += time_n;
 
     }
-
-    jobs_time += getNJobs() * time_n;
+    
+    if (*n >= 1000) {
+        jobs_time += getNJobs() * time_n;
+    }
 
     //Simulation::output();
     
@@ -99,7 +108,12 @@ int Simulation::run(int *n) {
 // return 1 if allocated to processor, 0 otherwise
 int Simulation::allocate(std::shared_ptr<Query> query) {
     if (policy == RR) {
-        processor.insert(query);
+        int cur_used_cores = query->allocate(cores - used_cores);
+        if (cur_used_cores > 0) {
+            used_cores += cur_used_cores;
+            updateTimeC(query->getTimeC());
+        }
+        processor_RR.push_back(query);
         return 1;
     } else {
         if (used_cores < cores) {
@@ -122,21 +136,45 @@ void Simulation::procUpdate(double time, int *n) {
     
     if (policy == RR) {
         // update all Querys with cores allocated by time
-        for (auto query_p = processor.begin(); query_p != processor.end();) {
+        time_c = INFINITY;
+        for (auto query_p = processor_RR.begin(); query_p != processor_RR.end();) {
             std::shared_ptr<Query> cur_query = *query_p;
             if (cur_query->cores != 0) {
+                used_cores -= cur_query->cores;
                 int finished = cur_query->update(time);
-                cur_query->deallocate();
                 if (finished) {
-                    query_p = processor.erase(query_p);
+                    query_p = processor_RR.erase(query_p);
                     *n += 1;
                     continue;
+                } else if (finished == -1) {
+                    cur_query->deallocate();
+                } else {
+                    updateTimeC(cur_query->getTimeC());
+                    used_cores += cur_query->cores;
                 }
             }
             ++query_p;
         }
         // reallocate all the cores
-
+        int cur_cores = (cores - used_cores)/processor_RR.size();
+        for (int idx = 0; idx < processor_RR.size(); idx++) {
+            if (used_cores >= cores) break;
+            std::shared_ptr<Query> cur_query = processor_RR[idx]; 
+            int cur_used_cores = cur_query->allocate(cur_cores);
+            if (cur_used_cores > 0) {
+                used_cores += cur_used_cores;
+                updateTimeC(cur_query->getTimeC());
+            }
+        }
+        for (int idx = 0; idx < processor_RR.size(); idx++) {
+            if (used_cores >= cores) break;
+            std::shared_ptr<Query> cur_query = processor_RR[idx]; 
+            int cur_used_cores = cur_query->allocate(1);
+            if (cur_used_cores > 0) {
+                used_cores += cur_used_cores;
+                updateTimeC(cur_query->getTimeC());
+            }
+        }
     } else {
         time_c = INFINITY;
         std::multiset<std::shared_ptr<Query>, CompareFunc> tmp_processor(compare_func);
@@ -159,6 +197,7 @@ void Simulation::procUpdate(double time, int *n) {
                     updateTimeC(cur_query->getTimeC());
                     tmp_processor.insert(cur_query);
                 } else if (finished == -1) {
+                    cur_query->deallocate();
                     queueAllocate(cur_query);
                 } else if (finished == 1) {
                     *n += 1;
@@ -210,7 +249,7 @@ int Simulation::queueToProc() {
         }
         int alloc_cores;
         if (policy == NEW_1) {
-            alloc_cores = 1;
+            alloc_cores = std::max<int>(1, (cores-used_cores)/queue.size());
         } else {
             alloc_cores = cores - used_cores;
         }
@@ -246,7 +285,14 @@ void Simulation::output() {
     int idx = 0;
     for (std::shared_ptr<Query> query : processor) {
         std::cout << "query_" << idx << std::endl;
-        query->printQuery();
+        query->printQuery(0);
+        idx++;
+    }
+    std::cout << "processor:" << std::endl;
+    idx = 0;
+    for (std::shared_ptr<Query> query : processor_RR) {
+        std::cout << "query_" << idx << std::endl;
+        query->printQuery(0);
         idx++;
     }
     std::cout << "queue_size:" << queue.size() << std::endl;

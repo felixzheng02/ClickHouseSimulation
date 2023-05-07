@@ -2,19 +2,26 @@
 #define PHASE_H
 
 #include <iostream>
+#include <cmath>
 #include "generation.hpp"
 
 struct Phase {
     int multiprogramming = 1; // 1: inelastic; more than 1: elastic
     int cores = 0;
-    double size; // remaining processing time given one CPU core
+    long double size; // remaining processing time given one CPU core
   
     Phase(int multiprogramming, double size) : multiprogramming(multiprogramming), size(size) {
     }
     // return 1 if Phase finishes
     int update(double time, double *query_size, int *query_cores, double *query_time_c) {
+        if (std::isnan(size)) {
+            return 0;
+        }
         double size_dec = time * cores;
         size -= size_dec;
+        if (std::isnan(size)) {
+            return 0;
+        }
         *query_size -= size_dec;
         if (std::abs(size) <= 1e-7f) {
             *query_cores -= cores;
@@ -27,14 +34,6 @@ struct Phase {
         return 0;
     }
 
-    int updateRR(double time, double *query_size) {
-        size -= time;
-        *query_size -= time;
-        if (std::abs(size) <= 1e-20f) {
-            return 1;
-        }
-        return 0;
-    }
 
     double getTimeC() {
         return size/cores;
@@ -52,6 +51,11 @@ struct Phase {
             return cores - before_cores;
         }
         return 0;
+    }
+
+    int deallocate() {
+        cores = 0;
+        return 1;
     }
 
     int printPhase() {
